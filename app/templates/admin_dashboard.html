@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Admin panel — Whāriki Connect{% endblock %}
+{% block content %}
+
+<h1>Admin panel</h1>
+<p class="page-sub">Centre-wide overview for Sunshine Preschool.</p>
+
+{% if pending_count > 0 %}
+<a href="{{ url_for('admin_pending_signups') }}" class="card pending-banner">
+  <span>⏳ <strong>{{ pending_count }}</strong> sign-up request{{ 's' if pending_count != 1 }} waiting for your approval</span>
+  <span class="btn btn-accent btn-sm">Review requests</span>
+</a>
+{% endif %}
+
+{% set role_counts = {} %}
+{% for r in stats.users_by_role %}{% set _ = role_counts.update({r.role: r.count}) %}{% endfor %}
+{% set ns = namespace(present_today=0) %}
+{% for a in stats.today_attendance %}{% if a.status == 'present' %}{% set ns.present_today = a.count %}{% endif %}{% endfor %}
+
+<div class="grid-cards">
+  <div class="stat-card"><div class="num">{{ stats.total_children }}</div><div class="label">Children enrolled</div></div>
+  <div class="stat-card"><div class="num">{{ role_counts.get('Teacher', 0) }}</div><div class="label">Teachers</div></div>
+  <div class="stat-card"><div class="num">{{ role_counts.get('Parent', 0) }}</div><div class="label">Parent accounts</div></div>
+  <div class="stat-card"><div class="num">{{ ns.present_today }}</div><div class="label">Present today</div></div>
+  <div class="stat-card"><div class="num">{{ stats.total_stories }}</div><div class="label">Learning stories posted</div></div>
+  <div class="stat-card"><div class="num">{{ stats.accident_stats.unacknowledged }}</div><div class="label">Accident forms awaiting acknowledgement</div></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom:12px;">Staff &amp; families</h3>
+  <table class="simple-table">
+    <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Classroom</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.full_name }}</td>
+        <td>{{ u.role }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.classroom or '—' }}</td>
+        <td><span class="status-pill {{ 'status-present' if u.status == 'approved' else 'status-pending' if u.status == 'pending' else 'status-absent' }}">{{ u.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

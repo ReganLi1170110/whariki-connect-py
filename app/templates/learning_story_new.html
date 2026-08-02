@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}New learning story — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('learning_stories') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to learning stories</a>
+
+<h1>New learning story</h1>
+<p class="page-sub">Write an observation, tag it against Te Whāriki, and add a photo.</p>
+
+<form method="POST" action="{{ url_for('create_learning_story') }}" enctype="multipart/form-data">
+  <div class="card">
+    <div class="form-row">
+      <div class="field">
+        <label for="child_id">Child</label>
+        <select id="child_id" name="child_id" required>
+          <option value="">— Select a child —</option>
+          {% for c in children %}
+          <option value="{{ c.child_id }}" {{ 'selected' if preselected_child_id == c.child_id }}>
+            {{ c.first_name }} {{ c.last_name }} ({{ c.classroom }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="image">Photo (optional)</label>
+        <input type="file" id="image" name="image" accept="image/png,image/jpeg,image/gif,image/webp" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" required placeholder="e.g. Building block towers"
+             value="{{ title or '' }}" />
+    </div>
+
+    <div class="field" style="margin-bottom:0;">
+      <label for="content">Observation</label>
+      <textarea id="content" name="content" rows="9" required
+                placeholder="What did the child do, say, or explore today?">{{ content or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:6px;">Te Whāriki strands</h3>
+    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">Tick the strands this observation relates to.</p>
+    <div class="checkbox-row">
+      {% for s in strands %}
+      <label class="check-chip">
+        <input type="checkbox" name="strand" value="{{ s }}"
+               {{ 'checked' if selected_strands and s in selected_strands }} /> {{ s }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:6px;">Learning outcomes</h3>
+    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
+      The 20 Te Whāriki learning outcomes, grouped by strand. Tick any that apply.
+    </p>
+    {% for strand, outcomes in outcomes_by_strand.items() %}
+    <div class="outcome-group">
+      <div class="outcome-group-head">{{ strand }}</div>
+      {% for o in outcomes %}
+      <label class="outcome-check">
+        <input type="checkbox" name="outcome" value="{{ o }}"
+               {{ 'checked' if selected_outcomes and o in selected_outcomes }} />
+        <span>{{ o }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" name="action" value="draft" class="btn btn-secondary">Save draft</button>
+    <button type="submit" name="action" value="publish" class="btn">Publish story</button>
+  </div>
+</form>
+
+{% endblock %}

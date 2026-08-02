@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Children — Whāriki Connect{% endblock %}
+{% block content %}
+
+<h1>Children</h1>
+<p class="page-sub">
+  {% if session.role == 'Parent' %}Your children enrolled at Sunny Preschool.
+  {% elif session.role == 'Teacher' %}Children in {{ session.classroom }}.
+  {% else %}Every child enrolled across all classrooms.{% endif %}
+</p>
+
+{% if children %}
+<div class="grid-cards">
+  {% for c in children %}
+  <a class="card child-card" href="{{ url_for('child_profile', child_id=c.child_id) }}">
+    <div class="avatar">{{ (c.first_name[0] ~ c.last_name[0])|upper }}</div>
+    <div class="child-name">{{ c.first_name }} {{ c.last_name }}</div>
+    <div class="child-meta">{{ c.classroom }}</div>
+    <div class="child-meta">DOB: {{ c.date_of_birth.strftime('%d %b %Y') }}</div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty-state">No children found.</div></div>
+{% endif %}
+
+{% endblock %}

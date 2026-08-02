@@ -1,0 +1,119 @@
+<svg width="600" height="420" viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="matGrad" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#FBF5E8"/>
+      <stop offset="100%" stop-color="#F0E6CC"/>
+    </radialGradient>
+  </defs>
+
+  <!-- soft ground shadow -->
+  <ellipse cx="300" cy="372" rx="230" ry="18" fill="#0F2418" opacity="0.18"/>
+
+  <!-- woven mat -->
+  <ellipse cx="300" cy="330" rx="250" ry="70" fill="url(#matGrad)"/>
+  <ellipse cx="300" cy="330" rx="250" ry="70" fill="none" stroke="#E3A730" stroke-width="3" opacity="0.5"/>
+  <g stroke="#E3A730" stroke-width="2" opacity="0.35">
+    <ellipse cx="300" cy="330" rx="200" ry="54" fill="none"/>
+    <ellipse cx="300" cy="330" rx="150" ry="38" fill="none"/>
+    <ellipse cx="300" cy="330" rx="100" ry="22" fill="none"/>
+  </g>
+
+  <!-- decorative plant, left -->
+  <g transform="translate(58,255)">
+    <rect x="-8" y="46" width="16" height="20" rx="3" fill="#8FAE94"/>
+    <path d="M0 46 C -18 30 -14 4 0 -6 C 14 4 18 30 0 46 Z" fill="#3C6B52"/>
+    <path d="M0 46 C -10 34 -8 16 0 6 C 8 16 10 34 0 46 Z" fill="#5C8A68"/>
+  </g>
+
+  <!-- decorative sun, right -->
+  <g transform="translate(538,60)">
+    <circle r="22" fill="#E3A730" opacity="0.9"/>
+    <g stroke="#E3A730" stroke-width="4" stroke-linecap="round" opacity="0.6">
+      <line x1="0" y1="-34" x2="0" y2="-42"/>
+      <line x1="24" y1="-24" x2="30" y2="-30"/>
+      <line x1="34" y1="0" x2="42" y2="0"/>
+      <line x1="24" y1="24" x2="30" y2="30"/>
+    </g>
+  </g>
+
+  <!-- ================= TEACHER (centre-back, reading a book) ================= -->
+  <g transform="translate(300,255)">
+    <!-- body -->
+    <path d="M -52 90 C -52 20 -34 -14 0 -14 C 34 -14 52 20 52 90 Z" fill="#1F3D2E"/>
+    <!-- crossed legs suggestion -->
+    <ellipse cx="0" cy="88" rx="66" ry="16" fill="#17301F"/>
+    <!-- arms holding book -->
+    <path d="M -40 34 Q -46 60 -20 66" stroke="#1F3D2E" stroke-width="16" stroke-linecap="round" fill="none"/>
+    <path d="M 40 34 Q 46 60 20 66" stroke="#1F3D2E" stroke-width="16" stroke-linecap="round" fill="none"/>
+    <!-- open book -->
+    <g transform="translate(0,64)">
+      <path d="M -26 0 L 0 -7 L 0 9 L -26 16 Z" fill="#F4EBD6"/>
+      <path d="M 26 0 L 0 -7 L 0 9 L 26 16 Z" fill="#FBF5E8"/>
+      <line x1="-20" y1="4" x2="-4" y2="0" stroke="#C9BB98" stroke-width="1.4"/>
+      <line x1="-20" y1="9" x2="-4" y2="5" stroke="#C9BB98" stroke-width="1.4"/>
+      <line x1="4" y1="0" x2="20" y2="4" stroke="#C9BB98" stroke-width="1.4"/>
+      <line x1="4" y1="5" x2="20" y2="9" stroke="#C9BB98" stroke-width="1.4"/>
+    </g>
+    <!-- head -->
+    <circle cx="0" cy="-38" r="30" fill="#E8C39E"/>
+    <!-- hair -->
+    <path d="M -30 -42 C -30 -68 30 -68 30 -42 C 30 -54 -30 -54 -30 -42 Z" fill="#4A3728"/>
+    <path d="M -30 -40 C -32 -20 -28 -4 -22 6 L -30 2 C -34 -14 -33 -30 -30 -40 Z" fill="#4A3728"/>
+    <path d="M 30 -40 C 32 -20 28 -4 22 6 L 30 2 C 34 -14 33 -30 30 -40 Z" fill="#4A3728"/>
+    <!-- simple face -->
+    <circle cx="-10" cy="-36" r="2.4" fill="#3A2A1E"/>
+    <circle cx="10" cy="-36" r="2.4" fill="#3A2A1E"/>
+    <path d="M -7 -24 Q 0 -19 7 -24" stroke="#3A2A1E" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- ================= CHILDREN (small peg figures, arc in front) ================= -->
+  <!-- child 1 -->
+  <g transform="translate(148,300) scale(0.72)">
+    <path d="M -40 70 C -40 16 -26 -10 0 -10 C 26 -10 40 16 40 70 Z" fill="#E3A730"/>
+    <circle cx="0" cy="-30" r="26" fill="#F3D3A6"/>
+    <path d="M -26 -34 C -26 -56 26 -56 26 -34 C 20 -46 -20 -46 -26 -34 Z" fill="#2B1C12"/>
+    <circle cx="-9" cy="-28" r="2.1" fill="#3A2A1E"/>
+    <circle cx="9" cy="-28" r="2.1" fill="#3A2A1E"/>
+    <path d="M -6 -18 Q 0 -14 6 -18" stroke="#3A2A1E" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- child 2 -->
+  <g transform="translate(220,318) scale(0.8)">
+    <path d="M -40 70 C -40 16 -26 -10 0 -10 C 26 -10 40 16 40 70 Z" fill="#8FAE94"/>
+    <circle cx="0" cy="-30" r="26" fill="#C88A5E"/>
+    <path d="M -26 -30 C -30 -50 30 -50 26 -30 C 28 -14 -28 -14 -26 -30 Z" fill="#1E140D"/>
+    <circle cx="-9" cy="-28" r="2.1" fill="#2A1C10"/>
+    <circle cx="9" cy="-28" r="2.1" fill="#2A1C10"/>
+    <path d="M -6 -18 Q 0 -13 6 -18" stroke="#2A1C10" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- child 3 (centre-front, smallest) -->
+  <g transform="translate(300,330) scale(0.86)">
+    <path d="M -40 70 C -40 16 -26 -10 0 -10 C 26 -10 40 16 40 70 Z" fill="#F4EBD6"/>
+    <circle cx="0" cy="-30" r="26" fill="#E8C39E"/>
+    <path d="M -25 -36 C -25 -58 25 -58 25 -36 C 25 -48 -25 -48 -25 -36 Z" fill="#8A5A34"/>
+    <circle cx="-9" cy="-28" r="2.1" fill="#3A2A1E"/>
+    <circle cx="9" cy="-28" r="2.1" fill="#3A2A1E"/>
+    <path d="M -6 -17 Q 0 -12 6 -17" stroke="#3A2A1E" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- child 4 -->
+  <g transform="translate(378,318) scale(0.8)">
+    <path d="M -40 70 C -40 16 -26 -10 0 -10 C 26 -10 40 16 40 70 Z" fill="#B85C42"/>
+    <circle cx="0" cy="-30" r="26" fill="#F3D3A6"/>
+    <path d="M -26 -30 Q 0 -54 26 -30 Q 20 -22 0 -24 Q -20 -22 -26 -30 Z" fill="#5B3A22"/>
+    <circle cx="-9" cy="-28" r="2.1" fill="#3A2A1E"/>
+    <circle cx="9" cy="-28" r="2.1" fill="#3A2A1E"/>
+    <path d="M -6 -18 Q 0 -14 6 -18" stroke="#3A2A1E" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- child 5 -->
+  <g transform="translate(450,300) scale(0.72)">
+    <path d="M -40 70 C -40 16 -26 -10 0 -10 C 26 -10 40 16 40 70 Z" fill="#3C6B52"/>
+    <circle cx="0" cy="-30" r="26" fill="#C88A5E"/>
+    <path d="M -26 -32 C -26 -54 26 -54 26 -32 C 26 -44 -26 -44 -26 -32 Z" fill="#1E140D"/>
+    <circle cx="-9" cy="-28" r="2.1" fill="#2A1C10"/>
+    <circle cx="9" cy="-28" r="2.1" fill="#2A1C10"/>
+    <path d="M -6 -18 Q 0 -14 6 -18" stroke="#2A1C10" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Record accident — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('accidents') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to accident forms</a>
+
+<h1>Accident report</h1>
+<p class="page-sub">Save as a draft to finish later, or submit to send it to the child's parents.</p>
+
+<form method="POST" action="{{ url_for('create_accident') }}">
+  <div class="card">
+    <div class="form-row">
+      <div class="field">
+        <label for="child_id">Child's name</label>
+        <select id="child_id" name="child_id" required>
+          <option value="">— Select a child —</option>
+          {% for c in children %}
+          <option value="{{ c.child_id }}"
+            {{ 'selected' if (form and form.get('child_id')|int == c.child_id) or preselected_child_id == c.child_id }}>
+            {{ c.first_name }} {{ c.last_name }} ({{ c.classroom }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="incident_date">Date of incident</label>
+        <input type="date" id="incident_date" name="incident_date" required
+               value="{{ form.get('incident_date') if form else today }}" />
+      </div>
+      <div class="field">
+        <label for="incident_time">Time of incident</label>
+        <input type="time" id="incident_time" name="incident_time"
+               value="{{ form.get('incident_time') if form else '' }}" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="location">Location of incident</label>
+        <input type="text" id="location" name="location" required placeholder="e.g. Outdoor playground"
+               value="{{ form.get('location') if form else '' }}" />
+      </div>
+      <div class="field">
+        <label for="nature_of_injury">Nature of injury</label>
+        <select id="nature_of_injury" name="nature_of_injury">
+          <option value="">— Select —</option>
+          {% for n in injury_natures %}
+          <option value="{{ n }}" {{ 'selected' if form and form.get('nature_of_injury') == n }}>{{ n }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="body_part">Body part affected</label>
+        <select id="body_part" name="body_part">
+          <option value="">— Select —</option>
+          {% for b in body_parts %}
+          <option value="{{ b }}" {{ 'selected' if form and form.get('body_part') == b }}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:0;">
+      <label for="description">Description of incident</label>
+      <textarea id="description" name="description" rows="4" required>{{ form.get('description') if form else '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:14px;">Caregiver response</h3>
+    <div class="field">
+      <label for="action_taken">Caregiver response and first aid provided</label>
+      <textarea id="action_taken" name="action_taken" rows="4" required>{{ form.get('action_taken') if form else '' }}</textarea>
+    </div>
+    <div class="field">
+      <label for="additional_information">Additional information</label>
+      <textarea id="additional_information" name="additional_information" rows="2">{{ form.get('additional_information') if form else '' }}</textarea>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-weight:400;">
+        <input type="checkbox" name="medical_attention_needed"
+               {{ 'checked' if form and form.get('medical_attention_needed') }} />
+        Medical attention was needed
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:14px;">Parent contact</h3>
+    <div class="field">
+      <label>Parent contacted?</label>
+      <div class="role-toggle">
+        <label class="role-option">
+          <input type="radio" name="parent_contacted" value="yes"
+                 {{ 'checked' if form and form.get('parent_contacted') == 'yes' }} /> Yes
+        </label>
+        <label class="role-option">
+          <input type="radio" name="parent_contacted" value="no"
+                 {{ 'checked' if not form or form.get('parent_contacted') != 'yes' }} /> No
+        </label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="parent_contacted_name">Name of parent contacted</label>
+        <input type="text" id="parent_contacted_name" name="parent_contacted_name"
+               value="{{ form.get('parent_contacted_name') if form else '' }}" />
+      </div>
+      <div class="field">
+        <label for="contacted_by">Who contacted parent</label>
+        <input type="text" id="contacted_by" name="contacted_by"
+               value="{{ form.get('contacted_by') if form else session.full_name }}" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="contact_method">How was parent contacted?</label>
+        <select id="contact_method" name="contact_method">
+          <option value="">— Select —</option>
+          {% for m in contact_methods %}
+          <option value="{{ m }}" {{ 'selected' if form and form.get('contact_method') == m }}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="contact_method_other">If other, please specify</label>
+        <input type="text" id="contact_method_other" name="contact_method_other"
+               value="{{ form.get('contact_method_other') if form else '' }}" />
+      </div>
+      <div class="field">
+        <label for="parent_contacted_time">Time parent was contacted</label>
+        <input type="time" id="parent_contacted_time" name="parent_contacted_time"
+               value="{{ form.get('parent_contacted_time') if form else '' }}" />
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:0;">
+      <label for="other_actions_taken">Other actions taken</label>
+      <textarea id="other_actions_taken" name="other_actions_taken" rows="3">{{ form.get('other_actions_taken') if form else '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="provider_signature">Child care provider signature</label>
+      <input type="text" id="provider_signature" name="provider_signature"
+             placeholder="Type your full name to sign"
+             value="{{ form.get('provider_signature') if form else session.full_name }}" />
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-weight:400;">
+        <input type="checkbox" name="notifiable_event" {{ 'checked' if form and form.get('notifiable_event') }} />
+        Notifiable event (must be reported under the Health &amp; Safety at Work Act)
+      </label>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" name="action" value="draft" class="btn btn-secondary">Save draft</button>
+    <button type="submit" name="action" value="submit" class="btn btn-alert">Submit form</button>
+  </div>
+</form>
+
+{% endblock %}

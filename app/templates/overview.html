@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Overview — Whāriki Connect{% endblock %}
+{% block content %}
+
+<h1>Welcome back, {{ session.full_name.split(' ')[0] }}</h1>
+<p class="page-sub">Here's what's happening today.</p>
+
+<div class="grid-cards">
+  {% if session.role == 'Parent' %}
+    <div class="stat-card"><div class="num">{{ children|length }}</div><div class="label">Your children</div></div>
+  {% elif session.role == 'Teacher' %}
+    <div class="stat-card"><div class="num">{{ children|length }}</div><div class="label">Children in {{ session.classroom }}</div></div>
+  {% else %}
+    <div class="stat-card"><div class="num">{{ children|length }}</div><div class="label">Children enrolled</div></div>
+  {% endif %}
+  <div class="stat-card"><div class="num">{{ unread_count }}</div><div class="label">Unread notifications</div></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom:14px;">Recent notifications</h3>
+  {% if notifications %}
+    {% for n in notifications %}
+      <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-border);">
+        <div>
+          {% if n.type == 'learning_story' %}📖{% elif n.type == 'message' %}💬{% elif n.type == 'accident_form' %}⚠️{% else %}🔔{% endif %}
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:0.9rem;{{ '' if not n.is_read else 'color:var(--color-ink-soft);' }}{{ 'font-weight:600;' if not n.is_read }}">{{ n.content }}</div>
+          <div style="font-size:0.75rem;color:var(--color-ink-soft);">{{ n.created_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">No notifications yet.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

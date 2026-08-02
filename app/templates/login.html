@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Whāriki Connect — Sign in</title>
+<link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}" />
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<div class="login-shell">
+  <div class="login-brand weave-pattern">
+    <div class="login-brand-top">
+      <img src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" class="login-logo" />
+      <div class="eyebrow">Early Childhood Education</div>
+      <h1>Everything about your tamariki, woven into one place.</h1>
+      <p>Learning stories, attendance, accident forms and parent&ndash;teacher messages — one login, instead of switching between three or four different apps.</p>
+    </div>
+    <img src="{{ url_for('static', filename='img/mat-time.jpg') }}" alt="A teacher reading with children during mat time" class="login-photo" />
+  </div>
+
+  <div class="login-form-wrap">
+    <div class="login-card">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to Whāriki Connect</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('login') }}">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="username"
+                 placeholder="you@sunnypreschool.nz" value="{{ email or '' }}" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••••" />
+        </div>
+        <button type="submit" class="btn btn-block">Sign in</button>
+      </form>
+
+      <p class="login-signup-link">
+        New here? <a href="{{ url_for('signup') }}">Create a parent or teacher account</a>
+      </p>
+
+      <div class="demo-creds">
+        Seeded demo accounts (all share one password):<br />
+        Admin: <code>admin@sunnypreschool.nz</code><br />
+        Teacher: <code>sarah.thompson@sunnypreschool.nz</code><br />
+        Password: <code>Sunnypreschool123</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

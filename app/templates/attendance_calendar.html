@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ child.first_name }}'s attendance — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('attendance') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to attendance</a>
+
+<h1>{{ child.first_name }} {{ child.last_name }}</h1>
+<p class="page-sub">
+  {{ child.classroom }} ·
+  {% if can_edit %}Click any day to record or correct attendance.{% else %}Attendance history.{% endif %}
+</p>
+
+<div class="card">
+  <div class="cal-head">
+    <a href="{{ url_for('attendance_calendar', child_id=child.child_id, year=prev_year, month=prev_month) }}"
+       class="btn btn-secondary btn-sm">←</a>
+    <h3>{{ month_name }} {{ year }}</h3>
+    <a href="{{ url_for('attendance_calendar', child_id=child.child_id, year=next_year, month=next_month) }}"
+       class="btn btn-secondary btn-sm">→</a>
+  </div>
+
+  <div class="cal-grid cal-dow">
+    {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<div>{{ d }}</div>{% endfor %}
+  </div>
+
+  <div class="cal-grid">
+    {% for week in weeks %}
+      {% for day in week %}
+        {% if day == 0 %}
+          <div class="cal-cell cal-empty"></div>
+        {% else %}
+          {% set row = rows.get(day) %}
+          {% set is_today = (day == today.day and month == today.month and year == today.year) %}
+          <div class="cal-cell {{ 'cal-today' if is_today }} cal-{{ row.status if row else 'none' }}"
+               {% if can_edit %}onclick="openDay('{{ year }}-{{ '%02d'|format(month) }}-{{ '%02d'|format(day) }}', '{{ row.status if row else 'present' }}', '{{ row.check_in_time.strftime('%H:%M') if row and row.check_in_time else '' }}', '{{ row.check_out_time.strftime('%H:%M') if row and row.check_out_time else '' }}')"{% endif %}>
+            <div class="cal-day">{{ day }}</div>
+            {% if row %}
+            <div class="cal-status">{{ row.status }}</div>
+            {% if row.check_in_time %}<div class="cal-time">{{ row.check_in_time.strftime('%H:%M') }}{% if row.check_out_time %}–{{ row.check_out_time.strftime('%H:%M') }}{% endif %}</div>{% endif %}
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  <div class="cal-legend">
+    <span><i class="dot dot-present"></i> Present</span>
+    <span><i class="dot dot-absent"></i> Absent</span>
+    <span><i class="dot dot-sick"></i> Sick</span>
+    <span><i class="dot dot-leave"></i> On leave</span>
+  </div>
+</div>
+
+{% if can_edit %}
+<div class="modal-backdrop" id="dayModal">
+  <div class="modal">
+    <h3 style="margin-bottom:14px;">Edit attendance — <span id="modalDate"></span></h3>
+    <form method="POST" action="{{ url_for('attendance_set', child_id=child.child_id) }}">
+      <input type="hidden" name="date" id="modalDateInput" />
+      <div class="field">
+        <label for="status">Status</label>
+        <select name="status" id="modalStatus">
+          <option value="present">Present</option>
+          <option value="absent">Absent</option>
+          <option value="sick">Sick</option>
+          <option value="on_leave">On leave</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="check_in_time">Check-in</label>
+          <input type="time" name="check_in_time" id="modalIn" />
+        </div>
+        <div class="field">
+          <label for="check_out_time">Check-out</label>
+          <input type="time" name="check_out_time" id="modalOut" />
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeDay()">Cancel</button>
+        <button type="submit" class="btn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openDay(dateStr, status, timeIn, timeOut) {
+    document.getElementById('modalDate').textContent = dateStr;
+    document.getElementById('modalDateInput').value = dateStr;
+    document.getElementById('modalStatus').value = status;
+    document.getElementById('modalIn').value = timeIn;
+    document.getElementById('modalOut').value = timeOut;
+    document.getElementById('dayModal').style.display = 'flex';
+  }
+  function closeDay() {
+    document.getElementById('dayModal').style.display = 'none';
+  }
+  document.getElementById('dayModal').addEventListener('click', function (e) {
+    if (e.target === this) closeDay();
+  });
+</script>
+{% endif %}
+
+{% endblock %}

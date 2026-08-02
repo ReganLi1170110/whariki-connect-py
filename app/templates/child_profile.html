@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ child.first_name }} {{ child.last_name }} — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('children_list') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to children</a>
+
+<div class="card" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+  <div>
+    <h1>{{ child.first_name }} {{ child.last_name }}</h1>
+    <p class="page-sub" style="margin-bottom:4px;">{{ child.classroom }} · Born {{ child.date_of_birth.strftime('%d %b %Y') }}</p>
+    <p style="font-size:0.85rem;color:var(--color-ink-soft);">Emergency contact: {{ child.emergency_contact or '—' }} ({{ child.emergency_phone or '—' }})</p>
+    <p style="font-size:0.85rem;color:var(--color-ink-soft);">
+      Parents/guardians: {{ parents|map(attribute='full_name')|join(', ') if parents else '—' }}
+    </p>
+  </div>
+  <div>
+    {% if today_attendance and today_attendance.check_in_time and not today_attendance.check_out_time %}
+      <span class="status-pill status-present">Checked in today</span>
+    {% elif today_attendance and today_attendance.check_out_time %}
+      <span class="status-pill status-present">Checked out today</span>
+    {% else %}
+      <span class="status-pill status-pending">Not checked in</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-cards">
+  <a href="{{ url_for('learning_stories', child_id=child.child_id) }}" class="card quick-link">
+    <div class="num">{{ stories|length }}</div>
+    <div class="label">Learning stories</div>
+  </a>
+  <a href="{{ url_for('attendance_calendar', child_id=child.child_id) }}" class="card quick-link">
+    <div class="num">{{ attendance|length }}</div>
+    <div class="label">Attendance records</div>
+  </a>
+  <a href="{{ url_for('accidents') }}" class="card quick-link">
+    <div class="num">{{ accidents|length }}</div>
+    <div class="label">Accident forms</div>
+  </a>
+</div>
+
+<div class="card">
+  <div class="page-head" style="margin-bottom:14px;">
+    <h3>Recent learning stories</h3>
+    {% if session.role == 'Teacher' %}
+    <a href="{{ url_for('new_learning_story', child_id=child.child_id) }}" class="btn btn-accent btn-sm">+ New story</a>
+    {% endif %}
+  </div>
+  {% if stories %}
+    {% for s in stories[:5] %}
+    <a href="{{ url_for('view_learning_story', story_id=s.story_id) }}" class="card card-plain" style="display:block;text-decoration:none;color:inherit;">
+      <div style="font-weight:600;">{{ s.title }}
+        {% if s.status == 'draft' %}<span class="status-pill status-pending">Draft</span>{% endif %}
+      </div>
+      <div class="child-meta">By {{ s.teacher_name }} · {{ s.created_at.strftime('%d %b %Y') }}</div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">No learning stories yet.</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="page-head" style="margin-bottom:14px;">
+    <h3>Recent attendance</h3>
+    <a href="{{ url_for('attendance_calendar', child_id=child.child_id) }}" class="btn btn-secondary btn-sm">Open calendar</a>
+  </div>
+  {% if attendance %}
+  <table class="simple-table">
+    <thead><tr><th>Date</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for a in attendance[:10] %}
+      <tr>
+        <td>{{ a.date.strftime('%d %b %Y') }}</td>
+        <td>{{ a.check_in_time.strftime('%I:%M %p') if a.check_in_time else '—' }}</td>
+        <td>{{ a.check_out_time.strftime('%I:%M %p') if a.check_out_time else '—' }}</td>
+        <td><span class="status-pill {{ 'status-present' if a.status == 'present' else 'status-absent' }}">{{ a.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">No attendance recorded yet.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

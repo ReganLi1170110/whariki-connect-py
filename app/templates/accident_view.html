@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Accident report — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('accidents') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to accident forms</a>
+
+<div class="card report-sheet">
+  <div class="report-head">
+    <h1>Accident report</h1>
+    <div>
+      {% if form.status == 'draft' %}<span class="status-pill status-pending">Draft</span>{% endif %}
+      {% if form.notifiable_event %}<span class="flag-notifiable">Notifiable event</span>{% endif %}
+    </div>
+  </div>
+
+  <table class="report-table">
+    <tr><th>Child's name</th><td>{{ form.first_name }} {{ form.last_name }} ({{ form.classroom }})</td></tr>
+    <tr><th>Date of incident</th><td>{{ form.incident_date.strftime('%d %b %Y') }}</td></tr>
+    <tr><th>Time of incident</th><td>{{ form.incident_time.strftime('%I:%M %p') if form.incident_time else '—' }}</td></tr>
+    <tr><th>Location of incident</th><td>{{ form.location }}</td></tr>
+    <tr><th>Nature of injury</th><td>{{ form.nature_of_injury or '—' }}{% if form.body_part %} — {{ form.body_part }}{% endif %}</td></tr>
+  </table>
+
+  <div class="report-block">
+    <div class="report-block-head">Description of incident</div>
+    <div class="report-block-body">{{ form.description }}</div>
+  </div>
+
+  <div class="report-block">
+    <div class="report-block-head">Caregiver response and first aid provided</div>
+    <div class="report-block-body">{{ form.action_taken }}</div>
+  </div>
+
+  <table class="report-table">
+    <tr><th>Caregiver name</th><td>{{ form.teacher_name }}</td></tr>
+    <tr><th>Additional information</th><td>{{ form.additional_information or '—' }}</td></tr>
+    <tr><th>Medical attention needed</th><td>{{ 'Yes' if form.medical_attention_needed else 'No' }}</td></tr>
+  </table>
+
+  <table class="report-table">
+    <tr><th>Parent contacted?</th><td>{{ 'Yes' if form.parent_contacted else 'No' }}</td></tr>
+    <tr><th>Name of parent contacted</th><td>{{ form.parent_contacted_name or '—' }}</td></tr>
+    <tr><th>Who contacted parent</th><td>{{ form.contacted_by or '—' }}</td></tr>
+    <tr><th>How was parent contacted?</th><td>{{ form.contact_method or '—' }}{% if form.contact_method_other %} ({{ form.contact_method_other }}){% endif %}</td></tr>
+    <tr><th>Time parent was contacted</th><td>{{ form.parent_contacted_time.strftime('%I:%M %p') if form.parent_contacted_time else '—' }}</td></tr>
+  </table>
+
+  <div class="report-block">
+    <div class="report-block-head">Other actions taken</div>
+    <div class="report-block-body">{{ form.other_actions_taken or '—' }}</div>
+  </div>
+
+  <table class="report-table">
+    <tr><th>Child care provider signature</th>
+        <td>{{ form.provider_signature or form.teacher_name }}{% if form.teacher_signed_at %} · signed {{ form.teacher_signed_at.strftime('%d %b %Y, %I:%M %p') }}{% endif %}</td></tr>
+  </table>
+
+  <div style="margin-top:18px;">
+    {% if form.parent_acknowledged_at %}
+      <span class="status-pill status-present">Acknowledged by parent {{ form.parent_acknowledged_at.strftime('%d %b %Y, %I:%M %p') }}</span>
+    {% elif session.role == 'Parent' and form.status == 'submitted' %}
+      <form method="POST" action="{{ url_for('acknowledge_accident', accident_id=form.accident_id) }}">
+        <button type="submit" class="btn">Acknowledge this form</button>
+      </form>
+    {% elif form.status == 'submitted' %}
+      <span class="status-pill status-pending">Awaiting parent acknowledgement</span>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

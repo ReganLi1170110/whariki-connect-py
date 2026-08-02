@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Attendance — Whāriki Connect{% endblock %}
+{% block content %}
+
+<h1>Attendance</h1>
+<p class="page-sub">
+  {% if session.role == 'Parent' %}Check your child in when you arrive, and out when you collect them.
+  {% else %}Today's attendance for {{ session.classroom or 'the centre' }}. Open a child's calendar to correct any day.{% endif %}
+  · {{ today.strftime('%A, %d %B %Y') }}
+</p>
+
+{% if children %}
+<div class="grid-cards">
+  {% for c in children %}
+  {% set row = today_rows.get(c.child_id) %}
+  <div class="card attendance-card">
+    <div class="attendance-card-head">
+      <div class="avatar">{{ (c.first_name[0] ~ c.last_name[0])|upper }}</div>
+      <div>
+        <div class="child-name">{{ c.first_name }} {{ c.last_name }}</div>
+        <div class="child-meta">{{ c.classroom }}</div>
+      </div>
+    </div>
+
+    <div class="attendance-times">
+      <div><span class="t-label">In</span> {{ row.check_in_time.strftime('%I:%M %p') if row and row.check_in_time else '—' }}</div>
+      <div><span class="t-label">Out</span> {{ row.check_out_time.strftime('%I:%M %p') if row and row.check_out_time else '—' }}</div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      {% if row %}
+        <span class="status-pill {{ 'status-present' if row.status == 'present' else 'status-absent' }}">{{ row.status }}</span>
+      {% else %}
+        <span class="status-pill status-pending">not recorded</span>
+      {% endif %}
+    </div>
+
+    <div class="attendance-actions">
+      {% if not row or not row.check_in_time %}
+      <form method="POST" action="{{ url_for('attendance_checkin', child_id=c.child_id) }}">
+        <button type="submit" class="btn btn-accent btn-sm">Check in</button>
+      </form>
+      {% elif not row.check_out_time %}
+      <form method="POST" action="{{ url_for('attendance_checkout', child_id=c.child_id) }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Check out</button>
+      </form>
+      {% else %}
+      <span class="child-meta">Checked out</span>
+      {% endif %}
+      <a href="{{ url_for('attendance_calendar', child_id=c.child_id) }}" class="btn btn-secondary btn-sm">Calendar</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty-state">No children linked to your account yet.</div></div>
+{% endif %}
+
+{% endblock %}

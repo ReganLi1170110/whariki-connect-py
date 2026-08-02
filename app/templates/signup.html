@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Whāriki Connect — Create an account</title>
+<link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}" />
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<div class="login-shell">
+  <div class="login-brand weave-pattern">
+    <div class="login-brand-top">
+      <img src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" class="login-logo" />
+      <div class="eyebrow">Early Childhood Education</div>
+      <h1>Join your centre on Whāriki Connect.</h1>
+      <p>Parents and teachers can request an account below. Your centre admin will review and approve it before you can sign in.</p>
+    </div>
+    <img src="{{ url_for('static', filename='img/mat-time.jpg') }}" alt="A teacher reading with children during mat time" class="login-photo" />
+  </div>
+
+  <div class="login-form-wrap">
+    <div class="login-card">
+      <h2>Create an account</h2>
+      <p class="sub">Request access to Whāriki Connect</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('signup_submit') }}">
+        <div class="field">
+          <label>I am a&hellip;</label>
+          <div class="role-toggle">
+            <label class="role-option">
+              <input type="radio" name="role" value="Parent" required {{ 'checked' if role == 'Parent' or not role }} onchange="document.getElementById('classroom-field').style.display='none'" />
+              Parent
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="Teacher" required {{ 'checked' if role == 'Teacher' }} onchange="document.getElementById('classroom-field').style.display='block'" />
+              Teacher
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="full_name">Full name</label>
+          <input type="text" id="full_name" name="full_name" required value="{{ full_name or '' }}" placeholder="Jane Smith" />
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="username" value="{{ email or '' }}" placeholder="you@example.co.nz" />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" />
+        </div>
+
+        <div class="field">
+          <label for="centre_id">Your ECE centre</label>
+          <select id="centre_id" name="centre_id" required>
+            <option value="">— Select your centre —</option>
+            {% for c in centres %}
+            <option value="{{ c.centre_id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field" id="classroom-field" style="display: {{ 'block' if role == 'Teacher' else 'none' }};">
+          <label for="classroom">Classroom / room</label>
+          <select id="classroom" name="classroom">
+            <option value="">— Select your room —</option>
+            {% for room in classrooms %}
+            <option value="{{ room }}">{{ room }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-block">Request access</button>
+      </form>
+
+      <p class="login-signup-link">
+        Already approved? <a href="{{ url_for('login') }}">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

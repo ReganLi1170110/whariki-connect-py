@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ story.title }} — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('learning_stories') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to learning stories</a>
+
+<div class="card story-detail">
+  <h1>{{ story.title }}
+    {% if story.status == 'draft' %}<span class="status-pill status-pending">Draft</span>{% endif %}
+  </h1>
+  <p class="page-sub" style="margin-bottom:18px;">
+    {{ story.first_name }} {{ story.last_name }} · {{ story.classroom }} ·
+    By {{ story.teacher_name }} · {{ story.created_at.strftime('%d %b %Y, %I:%M %p') }}
+  </p>
+
+  {% if story.media_url %}
+  <img src="{{ url_for('static', filename='uploads/' ~ story.media_url) }}" alt="" class="story-hero" />
+  {% endif %}
+
+  <div class="story-content">{{ story.content }}</div>
+
+  {% if story.strands %}
+  <h3 class="story-section-head">Te Whāriki strands</h3>
+  <div>{% for t in story.strands %}<span class="tag">{{ t }}</span>{% endfor %}</div>
+  {% endif %}
+
+  {% if story.outcomes %}
+  <h3 class="story-section-head">Learning outcomes</h3>
+  <ul class="outcome-list">
+    {% for o in story.outcomes %}<li>{{ o }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+{% endblock %}

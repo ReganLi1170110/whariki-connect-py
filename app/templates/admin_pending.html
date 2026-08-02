@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Pending sign-ups — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to admin panel</a>
+
+<h1>Pending sign-up requests</h1>
+<p class="page-sub">Approve or decline parent and teacher accounts requesting access to Sunshine Preschool.</p>
+
+{% if pending %}
+  {% for p in pending %}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-weight:600;font-size:1.05rem;">{{ p.full_name }} <span class="tag">{{ p.role }}</span></div>
+        <div style="color:var(--color-ink-soft);font-size:0.88rem;margin-top:4px;">{{ p.email }}</div>
+        <div style="color:var(--color-ink-soft);font-size:0.82rem;margin-top:2px;">
+          Centre: {{ p.centre_name or '—' }}
+          {% if p.role == 'Teacher' %} · Classroom: {{ p.classroom or '—' }}{% endif %}
+          · Requested {{ p.created_at.strftime('%d %b %Y') }}
+        </div>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin_approve_signup', user_id=p.user_id) }}" style="margin-top:14px;">
+      {% if p.role == 'Parent' %}
+      <div class="field">
+        <label>Link to child/children (optional now, can be done later by editing the family in the database)</label>
+        <div style="max-height:160px;overflow-y:auto;border:1.5px solid var(--color-border);border-radius:6px;padding:10px 14px;">
+          {% for c in children %}
+          <label style="display:block;font-weight:400;font-size:0.88rem;margin-bottom:6px;">
+            <input type="checkbox" name="child_ids" value="{{ c.child_id }}" />
+            {{ c.first_name }} {{ c.last_name }} <span style="color:var(--color-ink-soft);">({{ c.classroom }})</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-accent">Approve</button>
+        <button type="submit" formaction="{{ url_for('admin_reject_signup', user_id=p.user_id) }}" class="btn btn-secondary">Decline</button>
+      </div>
+    </form>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card"><div class="empty-state">No pending requests right now. 🎉</div></div>
+{% endif %}
+
+{% endblock %}

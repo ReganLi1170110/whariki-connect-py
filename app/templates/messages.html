@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Messages — Whāriki Connect{% endblock %}
+{% block content %}
+
+<h1>Messages</h1>
+<p class="page-sub">Chat directly with your child's teacher, or with a child's parents.</p>
+
+<div class="card messages-shell">
+  <div class="contact-list">
+    {% if contacts %}
+      {% for c in contacts %}
+        <a class="contact-item {{ 'active' if active_contact_id == c.user_id and active_child_id == c.child_id }}"
+           href="{{ url_for('messages', **({'with': c.user_id, 'child_id': c.child_id} if c.child_id else {'with': c.user_id})) }}">
+          <span class="contact-name">
+            {% if unread.get(c.user_id) %}<span class="unread-dot" title="{{ unread.get(c.user_id) }} unread"></span>{% endif %}
+            {{ c.full_name }}
+          </span>
+          {% if c.child_first_name %}<br><span style="font-size:0.72rem;color:var(--color-ink-soft);">re: {{ c.child_first_name }}</span>{% endif %}
+        </a>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:20px 0;">No contacts yet.</div>
+    {% endif %}
+  </div>
+
+  <div>
+    {% if active_contact_id %}
+      <div class="chat-window">
+        {% if thread %}
+          {% for m in thread %}
+            <div class="chat-bubble {{ 'mine' if m.sender_id == session.user_id else 'theirs' }}">
+              {{ m.content }}
+              <div class="meta">{{ m.created_at.strftime('%d %b, %I:%M %p') }}</div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">No messages yet — say hello!</div>
+        {% endif %}
+      </div>
+      <form method="POST" action="{{ url_for('send_message') }}" class="chat-input-row">
+        <input type="hidden" name="receiver_id" value="{{ active_contact_id }}" />
+        {% if active_child_id %}<input type="hidden" name="child_id" value="{{ active_child_id }}" />{% endif %}
+        <input type="text" name="content" placeholder="Type a message…" required style="flex:1;padding:10px 14px;border:1.5px solid var(--color-border);border-radius:6px;" />
+        <button type="submit" class="btn">Send</button>
+      </form>
+    {% else %}
+      <div class="empty-state" style="padding:60px 20px;">Select a contact to start chatting.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

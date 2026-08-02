@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Accident forms — Whāriki Connect{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>Accident &amp; incident forms</h1>
+    <p class="page-sub">
+      {% if session.role == 'Parent' %}Forms filed for your tamariki. Please acknowledge each one.
+      {% elif session.role == 'Teacher' %}Forms for children in {{ session.classroom }}.
+      {% else %}Every accident form across the centre.{% endif %}
+    </p>
+  </div>
+  {% if session.role == 'Teacher' %}
+  <a href="{{ url_for('new_accident') }}" class="btn btn-alert">+ Record accident</a>
+  {% endif %}
+</div>
+
+{% if forms %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="simple-table">
+    <thead>
+      <tr><th>Date</th><th>Child</th><th>Location</th><th>Injury</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for f in forms %}
+      <tr>
+        <td>{{ f.incident_date.strftime('%d %b %Y') }}{% if f.incident_time %}<br /><span class="child-meta">{{ f.incident_time.strftime('%I:%M %p') }}</span>{% endif %}</td>
+        <td>{{ f.first_name }} {{ f.last_name }}<br /><span class="child-meta">{{ f.classroom }}</span></td>
+        <td>{{ f.location }}</td>
+        <td>{{ f.nature_of_injury or '—' }}{% if f.notifiable_event %}<br /><span class="flag-notifiable">Notifiable</span>{% endif %}</td>
+        <td>
+          {% if f.status == 'draft' %}
+            <span class="status-pill status-pending">Draft</span>
+          {% elif f.parent_acknowledged_at %}
+            <span class="status-pill status-present">Acknowledged</span>
+          {% else %}
+            <span class="status-pill status-pending">Awaiting parent</span>
+          {% endif %}
+        </td>
+        <td><a href="{{ url_for('view_accident', accident_id=f.accident_id) }}" class="btn btn-secondary btn-sm">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><div class="empty-state">No accident forms on file. 🎉</div></div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Learning stories — Whāriki Connect{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>Learning stories</h1>
+    <p class="page-sub">
+      {% if session.role == 'Parent' %}Every learning story written about your tamariki.
+      {% elif session.role == 'Teacher' %}Learning stories you have written, and which child each one is about.
+      {% else %}Every learning story across the centre.{% endif %}
+    </p>
+  </div>
+  {% if session.role == 'Teacher' %}
+  <a href="{{ url_for('new_learning_story') }}" class="btn btn-accent">+ New learning story</a>
+  {% endif %}
+</div>
+
+{% if children %}
+<div class="filter-bar">
+  <a href="{{ url_for('learning_stories') }}" class="filter-chip {{ 'active' if not active_child_id }}">All children</a>
+  {% for c in children %}
+  <a href="{{ url_for('learning_stories', child_id=c.child_id) }}"
+     class="filter-chip {{ 'active' if active_child_id == c.child_id }}">{{ c.first_name }} {{ c.last_name }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if stories %}
+<div class="story-grid">
+  {% for s in stories %}
+  <a href="{{ url_for('view_learning_story', story_id=s.story_id) }}" class="card story-card">
+    {% if s.media_url %}
+    <img src="{{ url_for('static', filename='uploads/' ~ s.media_url) }}" alt="" class="story-thumb" />
+    {% else %}
+    <div class="story-thumb story-thumb-empty">{{ (s.first_name[0] ~ s.last_name[0])|upper }}</div>
+    {% endif %}
+    <div class="story-body">
+      <div class="story-title">
+        {{ s.title }}
+        {% if s.status == 'draft' %}<span class="status-pill status-pending">Draft</span>{% endif %}
+      </div>
+      <div class="story-meta">
+        {{ s.first_name }} {{ s.last_name }} · {{ s.classroom }}<br />
+        By {{ s.teacher_name }} · {{ s.created_at.strftime('%d %b %Y') }}
+      </div>
+      <div class="story-excerpt">{{ s.content[:130] }}{% if s.content|length > 130 %}…{% endif %}</div>
+      <div>{% for t in s.strands %}<span class="tag">{{ t }}</span>{% endfor %}</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty-state">No learning stories yet.</div></div>
+{% endif %}
+
+{% endblock %}
