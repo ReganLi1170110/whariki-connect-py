@@ -4,6 +4,7 @@ from flask import render_template, request, redirect, url_for, flash
 from app import flask_app as app
 import app.utils as utils
 from app.repository import admin_repository, user_repository, child_repository, notification_repository
+from app import password_routes
 
 
 @app.route("/admin", methods=["GET"])
@@ -11,9 +12,15 @@ from app.repository import admin_repository, user_repository, child_repository, 
 @utils.roles_required("Admin")
 def admin_dashboard():
     stats = admin_repository.get_stats()
-    users = admin_repository.list_all_users()
+    filters = {
+        "q": request.args.get("q", "").strip(),
+        "role": request.args.get("role", "") if request.args.get("role") in ("Admin", "Teacher", "Parent") else "",
+        "status": request.args.get("status", "") if request.args.get("status") in ("approved", "pending", "rejected", "suspended") else "",
+    }
+    users = admin_repository.list_all_users(filters["q"] or None, filters["role"] or None, filters["status"] or None)
     pending_count = len(user_repository.list_pending_signups())
-    return render_template("admin_dashboard.html", stats=stats, users=users, pending_count=pending_count)
+    return render_template("admin_dashboard.html", stats=stats, users=users,
+                           pending_count=pending_count, filters=filters)
 
 
 @app.route("/admin/pending", methods=["GET"])
@@ -50,7 +57,21 @@ def admin_approve_signup(user_id):
         "Your Whāriki Connect account has been approved — you can now sign in.",
     )
 
-    flash(f"{pending_user['full_name']} has been approved.", "success")
+    # UAT feedback: let the new user know by e-mail too, when e-mail is set
+    # up. Without SMTP the in-app notification above is still created.
+    emailed = False
+    if password_routes._smtp_configured():
+        emailed = password_routes.send_plain_email(
+            pending_user["email"],
+            "Your Whāriki Connect account has been approved",
+            f"Kia ora {pending_user['full_name'].split(' ')[0]},\n\n"
+            "Your Whāriki Connect account has been approved. You can now sign in at "
+            f"{url_for('login', _external=True)} with the e-mail and password you registered with.\n\n"
+            "Ngā mihi,\nYour centre team",
+        )
+
+    flash(f"{pending_user['full_name']} has been approved"
+          + (" and e-mailed." if emailed else "."), "success")
     return redirect(url_for("admin_pending_signups"))
 
 

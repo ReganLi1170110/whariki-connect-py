@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Timesheet — Whāriki Connect{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>My timesheet</h1>
+    <p class="page-sub">Fill in the hours you actually worked each day. An admin can lock a week once it's been used for payroll.</p>
+  </div>
+  <form method="GET" action="{{ url_for('timesheet') }}" class="week-jump">
+    <label for="jump_date">Jump to date</label>
+    <input type="date" id="jump_date" name="week_start" value="{{ week_start.isoformat() }}"
+           onchange="this.form.submit()" />
+  </form>
+</div>
+
+<div class="week-nav">
+  <a href="{{ url_for('timesheet', week_start=prev_week.isoformat()) }}" class="btn btn-secondary btn-sm">← Previous week</a>
+  <div class="week-nav-label">{{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}</div>
+  <a href="{{ url_for('timesheet', week_start=next_week.isoformat()) }}" class="btn btn-secondary btn-sm">Next week →</a>
+</div>
+
+<form method="POST" action="{{ url_for('save_timesheet') }}">
+  <input type="hidden" name="week_start" value="{{ week_start.isoformat() }}" />
+
+  <div class="card" style="padding:0;overflow-x:auto;">
+    <table class="simple-table timesheet-table">
+      <thead>
+        <tr>
+          <th>Day</th><th>Start</th><th>End</th><th>Break (min)</th><th>Notes</th><th>Hours</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        {% set entry = row.entry %}
+        {% set locked = entry and entry.status == 'approved' %}
+        <tr class="{{ 'timesheet-row-locked' if locked }}">
+          <td>
+            <strong>{{ day_names[loop.index0] }}</strong><br />
+            <span class="page-sub" style="font-size:0.78rem;">{{ row.date.strftime('%d %b') }}</span>
+          </td>
+          <td><input type="time" name="day_{{ loop.index0 }}_start" value="{{ entry.start_time.strftime('%H:%M') if entry else '' }}" {{ 'disabled' if locked }} /></td>
+          <td><input type="time" name="day_{{ loop.index0 }}_end" value="{{ entry.end_time.strftime('%H:%M') if entry else '' }}" {{ 'disabled' if locked }} /></td>
+          <td><input type="number" min="0" step="5" name="day_{{ loop.index0 }}_break" value="{{ entry.break_minutes if entry else 0 }}" style="width:70px;" {{ 'disabled' if locked }} /></td>
+          <td><input type="text" name="day_{{ loop.index0 }}_notes" value="{{ entry.notes or '' }}" placeholder="Optional" {{ 'disabled' if locked }} /></td>
+          <td>{{ '%.2f'|format(entry|hours_worked) if entry else '—' }}</td>
+          <td>
+            {% if locked %}
+              <span class="status-pill status-present">Approved</span>
+            {% elif entry %}
+              <span class="status-pill status-pending">Submitted</span>
+            {% else %}
+              <span class="page-sub" style="font-size:0.78rem;">No entry</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="timesheet-footer">
+    <div class="timesheet-total">Week total: <strong>{{ '%.2f'|format(week_total) }} hours</strong></div>
+    <button type="submit" class="btn btn-accent">Save week</button>
+  </div>
+</form>
+
+{% endblock %}

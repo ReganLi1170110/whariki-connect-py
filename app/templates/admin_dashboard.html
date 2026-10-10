@@ -5,6 +5,10 @@
 <h1>Admin panel</h1>
 <p class="page-sub">Centre-wide overview for Sunshine Preschool.</p>
 
+<div style="margin-bottom:16px;">
+  <a href="{{ url_for('admin_params') }}" class="btn btn-secondary btn-sm">⚙ Manage lists (classrooms, injury types...)</a>
+</div>
+
 {% if pending_count > 0 %}
 <a href="{{ url_for('admin_pending_signups') }}" class="card pending-banner">
   <span>⏳ <strong>{{ pending_count }}</strong> sign-up request{{ 's' if pending_count != 1 }} waiting for your approval</span>
@@ -26,14 +30,40 @@
   <div class="stat-card"><div class="num">{{ stats.accident_stats.unacknowledged }}</div><div class="label">Accident forms awaiting acknowledgement</div></div>
 </div>
 
-<div class="card">
+<div class="card" id="staff">
   <h3 style="margin-bottom:12px;">Staff &amp; families</h3>
+  <form method="GET" action="{{ url_for('admin_dashboard') }}#staff" class="filter-form">
+    <div class="filter-field filter-grow">
+      <label for="q">Search name or email</label>
+      <input type="search" id="q" name="q" value="{{ filters.q }}" placeholder="e.g. Patel or @sunnypreschool.nz" />
+    </div>
+    <div class="filter-field">
+      <label for="role">Role</label>
+      <select id="role" name="role">
+        <option value="">All roles</option>
+        {% for r in ['Admin', 'Teacher', 'Parent'] %}<option value="{{ r }}" {{ 'selected' if filters.role == r }}>{{ r }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="filter-field">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        <option value="">All statuses</option>
+        {% for s in ['approved', 'pending', 'suspended', 'rejected'] %}<option value="{{ s }}" {{ 'selected' if filters.status == s }}>{{ s|capitalize }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      {% if filters.q or filters.role or filters.status %}<a href="{{ url_for('admin_dashboard') }}#staff" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
+    </div>
+  </form>
+  <p class="page-sub" style="margin:4px 0 10px;font-size:0.82rem;">Showing {{ users|length }} account{{ 's' if users|length != 1 }}.</p>
+  {% if users %}
   <table class="simple-table">
     <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Classroom</th><th>Status</th></tr></thead>
     <tbody>
       {% for u in users %}
       <tr>
-        <td>{{ u.full_name }}</td>
+        <td><a href="{{ url_for('admin_user_detail', user_id=u.user_id) }}" style="color:var(--color-primary);font-weight:600;">{{ u.full_name }}</a></td>
         <td>{{ u.role }}</td>
         <td>{{ u.email }}</td>
         <td>{{ u.classroom or '—' }}</td>
@@ -42,6 +72,9 @@
       {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div class="empty-state">No accounts match these filters.</div>
+  {% endif %}
 </div>
 
 {% endblock %}

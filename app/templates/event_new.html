@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}New event — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('events') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to events</a>
+
+<h1>New event</h1>
+<p class="page-sub">Shows up on the calendar for everyone in the audience you choose below.</p>
+
+<form method="POST" action="{{ url_for('create_event') }}">
+  <div class="card">
+    <div class="field">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" required placeholder="e.g. Trip to the botanic gardens"
+             value="{{ title or '' }}" />
+    </div>
+
+    <div class="field">
+      <label for="description">Description (optional)</label>
+      <textarea id="description" name="description" rows="4"
+                placeholder="Any details whānau need to know...">{{ description or '' }}</textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="event_type">Type</label>
+        <select id="event_type" name="event_type">
+          {% for t in event_types %}
+          <option value="{{ t }}" {{ 'selected' if event_type == t }}>{{ event_type_labels[t] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="event_date">Date</label>
+        <input type="date" id="event_date" name="event_date" required value="{{ event_date or '' }}" />
+      </div>
+      <div class="field">
+        <label for="end_date">End date (optional, for multi-day events)</label>
+        <input type="date" id="end_date" name="end_date" value="{{ end_date or '' }}" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:10px;">Audience</h3>
+    <div class="role-toggle" style="margin-bottom:14px;">
+      <label class="role-option">
+        <input type="radio" name="audience" value="centre" onchange="toggleClassroomPicker(false)"
+               {{ 'checked' if audience != 'classroom' }} />
+        Whole centre
+      </label>
+      <label class="role-option">
+        <input type="radio" name="audience" value="classroom" onchange="toggleClassroomPicker(true)"
+               {{ 'checked' if audience == 'classroom' }} />
+        {{ 'Just ' + own_classroom if session.role == 'Teacher' and own_classroom else 'A single classroom' }}
+      </label>
+    </div>
+
+    {% if session.role == 'Admin' %}
+    <div class="field" id="classroomPicker" style="display:{{ 'block' if audience == 'classroom' else 'none' }};">
+      <label for="classroom">Classroom</label>
+      <select id="classroom" name="classroom">
+        {% for c in classrooms %}
+        <option value="{{ c }}">{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% elif own_classroom %}
+    <p class="field-hint">As a teacher, "classroom" always means your own room: {{ own_classroom }}.</p>
+    {% endif %}
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-accent">Add to calendar</button>
+  </div>
+</form>
+
+<script>
+  function toggleClassroomPicker(show) {
+    const el = document.getElementById('classroomPicker');
+    if (el) el.style.display = show ? 'block' : 'none';
+  }
+</script>
+
+{% endblock %}

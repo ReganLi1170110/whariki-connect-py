@@ -10,6 +10,14 @@
   {% if can_edit %}Click any day to record or correct attendance.{% else %}Attendance history.{% endif %}
 </p>
 
+<div class="export-row">
+  <span class="field-hint" style="margin:0;">Export {{ month_name }} {{ year }}:</span>
+  <a class="btn btn-secondary btn-sm"
+     href="{{ url_for('attendance_export_csv', child_id=child.child_id, year=year, month=month) }}">⬇ CSV</a>
+  <a class="btn btn-secondary btn-sm"
+     href="{{ url_for('attendance_export_pdf', child_id=child.child_id, year=year, month=month) }}">⬇ PDF</a>
+</div>
+
 <div class="card">
   <div class="cal-head">
     <a href="{{ url_for('attendance_calendar', child_id=child.child_id, year=prev_year, month=prev_month) }}"

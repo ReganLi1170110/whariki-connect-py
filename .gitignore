@@ -1,19 +1,18 @@
-# Byte-compiled files
-__pycache__/
-*.py[cod]
-*.pyc
-
-# Virtual environment
-venv/
-env/
-.venv/
-
-# Database credentials - NEVER commit this, it contains your real local password
+# Real local secrets - never commit these
+.env
 app/db/connect.py
 
-# OS / editor
-.DS_Store
-.vscode/launch.json
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
 
-# Logs
-*.log
+# Editor / OS
+.vscode/*
+!.vscode/settings.json
+.DS_Store
+
+# Uploaded/generated content
+app/static/library_uploads/
+app/static/uploads/

@@ -29,6 +29,21 @@ def list_attendance_for_month(child_id, year, month):
         return {row['date'].day: row for row in cursor.fetchall()}
 
 
+def list_attendance_rows_for_month(child_id, year, month):
+    """Same query as list_attendance_for_month but as an ordered list rather
+    than a day-keyed dict - what the CSV/PDF export wants."""
+    with get_cursor() as cursor:
+        cursor.execute(
+            """SELECT * FROM Attendance
+               WHERE child_id = %s
+                 AND EXTRACT(YEAR FROM date) = %s
+                 AND EXTRACT(MONTH FROM date) = %s
+               ORDER BY date;""",
+            (child_id, year, month)
+        )
+        return cursor.fetchall()
+
+
 def get_attendance_for_date(child_id, date=None):
     date = date or date_cls.today()
     with get_cursor() as cursor:
@@ -95,3 +110,33 @@ def today_summary_for_children(child_ids):
             (list(child_ids),)
         )
         return {row['child_id']: row for row in cursor.fetchall()}
+
+
+def list_history_for_children(child_ids, start_date=None, end_date=None, status=None, limit=300):
+    """Attendance records across every child a user can access, newest
+    first, optionally narrowed by date range and/or status - what the
+    Attendance history/search page filters against. Without this, the only
+    way to look something up was one child's month calendar at a time."""
+    if not child_ids:
+        return []
+    sql = """SELECT a.*, c.first_name, c.last_name, c.classroom
+             FROM Attendance a JOIN Children c ON c.child_id = a.child_id
+             WHERE a.child_id = ANY(%s)"""
+    params = [list(child_ids)]
+
+    if start_date:
+        sql += " AND a.date >= %s"
+        params.append(start_date)
+    if end_date:
+        sql += " AND a.date <= %s"
+        params.append(end_date)
+    if status:
+        sql += " AND a.status = %s"
+        params.append(status)
+
+    sql += " ORDER BY a.date DESC, c.first_name LIMIT %s;"
+    params.append(limit)
+
+    with get_cursor() as cursor:
+        cursor.execute(sql, tuple(params))
+        return cursor.fetchall()

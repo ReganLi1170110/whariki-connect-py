@@ -24,6 +24,7 @@ def signup_submit():
     full_name = request.form.get("full_name", "").strip()
     email = request.form.get("email", "").strip()
     password = request.form.get("password", "")
+    confirm_password = request.form.get("confirm_password", "")
     centre_id = request.form.get("centre_id", type=int)
     classroom = request.form.get("classroom", "").strip() or None
 
@@ -41,8 +42,13 @@ def signup_submit():
         flash("Name, email and password are all required.", "danger")
         return render_template("signup.html", **form_context)
 
-    if len(password) < 8:
-        flash("Password must be at least 8 characters.", "danger")
+    password_error = utils.validate_password_strength(password)
+    if password_error:
+        flash(password_error, "danger")
+        return render_template("signup.html", **form_context)
+
+    if password != confirm_password:
+        flash("Those passwords don't match.", "danger")
         return render_template("signup.html", **form_context)
 
     if not centre_id:

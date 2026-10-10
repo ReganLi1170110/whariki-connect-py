@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Events — Whāriki Connect{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>Events &amp; calendar</h1>
+    <p class="page-sub">
+      {% if session.role == 'Parent' %}Excursions, photo days and centre closures for your tamariki's classroom and the whole centre.
+      {% elif session.role == 'Teacher' %}Events for {{ session.classroom }} and the whole centre.
+      {% else %}Every event across the centre.{% endif %}
+    </p>
+  </div>
+  {% if session.role in ('Teacher', 'Admin') %}
+  <a href="{{ url_for('new_event') }}" class="btn btn-accent">
+    <svg class="btn-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="4.5" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M3 8h14M7 3v3M13 3v3M10 10.5v4M8 12.5h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    New event
+  </a>
+  {% endif %}
+</div>
+
+<h3 style="margin-bottom:10px;">Upcoming</h3>
+{% if upcoming %}
+<div class="event-list">
+  {% for e in upcoming %}
+  <a href="{{ url_for('view_event', event_id=e.event_id) }}" class="card event-card event-type-{{ e.event_type }}">
+    <div class="event-date-block">
+      <div class="event-date-day">{{ e.event_date.strftime('%d') }}</div>
+      <div class="event-date-month">{{ e.event_date.strftime('%b') }}</div>
+    </div>
+    <div class="event-body">
+      <div class="event-card-head">
+        <span class="tag event-tag-{{ e.event_type }}">{{ event_type_labels[e.event_type] }}</span>
+        <span class="community-date">{{ e.classroom }}</span>
+      </div>
+      <div class="community-title">{{ e.title }}</div>
+      {% if e.description %}<div class="community-excerpt">{{ e.description[:140] }}{% if e.description|length > 140 %}…{% endif %}</div>{% endif %}
+      <div class="community-author">
+        {{ e.event_date.strftime('%A, %d %B %Y') }}{% if e.end_date %} – {{ e.end_date.strftime('%d %B %Y') }}{% endif %}
+        · Added by {{ e.created_by_name }}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty-state">No upcoming events.</div></div>
+{% endif %}
+
+{% if past %}
+<h3 style="margin:26px 0 10px;">Past events</h3>
+<div class="event-list">
+  {% for e in past %}
+  <a href="{{ url_for('view_event', event_id=e.event_id) }}" class="card event-card event-card-past event-type-{{ e.event_type }}">
+    <div class="event-date-block">
+      <div class="event-date-day">{{ e.event_date.strftime('%d') }}</div>
+      <div class="event-date-month">{{ e.event_date.strftime('%b') }}</div>
+    </div>
+    <div class="event-body">
+      <div class="event-card-head">
+        <span class="tag event-tag-{{ e.event_type }}">{{ event_type_labels[e.event_type] }}</span>
+        <span class="community-date">{{ e.classroom }}</span>
+      </div>
+      <div class="community-title">{{ e.title }}</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

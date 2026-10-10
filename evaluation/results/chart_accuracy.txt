@@ -1,0 +1,7 @@
+Kereru Room        stories= 14  attendance rows=  462  weeks=14  accident forms= 5
+Piwakawaka Room    stories= 14  attendance rows=  462  weeks=14  accident forms= 3
+Tui Room           stories= 12  attendance rows=  396  weeks=14  accident forms= 6
+Whole centre       stories= 40  attendance rows= 1320  weeks=14  accident forms=14
+Routine trend checked for 20 children
+
+Data points checked: 636   Mismatches: 0

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}AI assistant status — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('learning_stories') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to learning stories</a>
+
+<h1>AI assistant status</h1>
+<p class="page-sub">Check the AI writing assistant is configured correctly before you rely on it.</p>
+
+<div class="card">
+  <table class="simple-table">
+    <tbody>
+      <tr>
+        <th style="width:34%;">Provider</th>
+        <td><code>{{ info.provider }}</code></td>
+      </tr>
+      <tr>
+        <th>Model</th>
+        <td><code>{{ info.model }}</code></td>
+      </tr>
+      <tr>
+        <th>Key variable</th>
+        <td><code>{{ info.key_env }}</code></td>
+      </tr>
+      <tr>
+        <th>Key loaded?</th>
+        <td>
+          {% if info.key_present %}
+            <span class="status-pill status-present">Yes</span>
+            <code style="margin-left:8px;">{{ info.key_preview }}</code>
+          {% else %}
+            <span class="status-pill status-absent">No</span>
+          {% endif %}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+{% if not info.key_present %}
+<div class="card">
+  <h3 style="margin-bottom:10px;">How to switch it on</h3>
+  <p class="page-sub" style="margin-bottom:12px;">
+    Create a free API key at
+    <a href="https://console.groq.com/keys" target="_blank" style="color:var(--color-primary);font-weight:600;">console.groq.com/keys</a>
+    — no credit card required. Then, in the same terminal you start the app from:
+  </p>
+<pre class="code-block">$env:GROQ_API_KEY="gsk_your_key_here"
+python run.py</pre>
+  <p class="page-sub" style="margin:12px 0 0;font-size:0.85rem;">
+    That sets the key for the current terminal only. To set it permanently on Windows:
+  </p>
+<pre class="code-block">[System.Environment]::SetEnvironmentVariable("GROQ_API_KEY", "gsk_your_key_here", "User")</pre>
+  <p class="page-sub" style="margin:10px 0 0;font-size:0.85rem;">
+    Then close and reopen PowerShell so the variable is picked up.
+  </p>
+</div>
+{% else %}
+<div class="card">
+  <h3 style="margin-bottom:10px;">Live test</h3>
+  <p class="page-sub" style="margin-bottom:14px;">
+    Sends one short request to the provider and shows exactly what comes back.
+  </p>
+  <a href="{{ url_for('ai_status', test=1) }}" class="btn">Run test</a>
+
+  {% if test_result %}
+    <div class="ai-test-result {{ 'ok' if test_result.ok else 'fail' }}">
+      <strong>{{ 'Working' if test_result.ok else 'Failed' }}</strong>
+      <p>{{ test_result.message }}</p>
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-bottom:10px;">Switching provider</h3>
+  <p class="page-sub" style="margin-bottom:10px;font-size:0.88rem;">
+    Groq is the default because its free tier needs no credit card. To use Google
+    Gemini instead (requires billing enabled on a Google Cloud project):
+  </p>
+<pre class="code-block">$env:AI_PROVIDER="gemini"
+$env:GEMINI_API_KEY="your_key_here"</pre>
+  <p class="page-sub" style="margin:10px 0 0;font-size:0.85rem;">
+    You can also override the model with <code>GROQ_MODEL</code> or <code>GEMINI_MODEL</code>
+    if a provider retires the default one.
+  </p>
+</div>
+
+{% endblock %}

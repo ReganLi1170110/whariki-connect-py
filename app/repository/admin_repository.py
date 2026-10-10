@@ -8,7 +8,7 @@ def get_stats():
         cursor.execute("SELECT role, COUNT(*) AS count FROM Users GROUP BY role;")
         users_by_role = cursor.fetchall()
 
-        cursor.execute("SELECT COUNT(*) AS count FROM Children;")
+        cursor.execute("SELECT COUNT(*) AS count FROM Children WHERE enrolment_status = 'enrolled';")
         total_children = cursor.fetchone()['count']
 
         cursor.execute(
@@ -38,10 +38,24 @@ def get_stats():
     }
 
 
-def list_all_users():
+def list_all_users(search=None, role=None, status=None):
+    """Staff & families table on the admin panel. All three filters are
+    optional: `search` matches name or email (case-insensitive), `role` and
+    `status` must match exactly."""
+    sql = """SELECT user_id, role, full_name, email, phone, classroom, status, created_at
+             FROM Users WHERE 1 = 1"""
+    params = []
+    if search:
+        sql += " AND (full_name ILIKE %s OR email ILIKE %s)"
+        like = f"%{search}%"
+        params += [like, like]
+    if role:
+        sql += " AND role = %s"
+        params.append(role)
+    if status:
+        sql += " AND status = %s"
+        params.append(status)
+    sql += " ORDER BY role, full_name;"
     with get_cursor() as cursor:
-        cursor.execute(
-            """SELECT user_id, role, full_name, email, phone, classroom, created_at
-               FROM Users ORDER BY role, full_name;"""
-        )
+        cursor.execute(sql, tuple(params))
         return cursor.fetchall()

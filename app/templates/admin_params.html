@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Manage lists — Whāriki Connect{% endblock %}
+{% block content %}
+
+<h1>Manage lists</h1>
+<p class="page-sub">The dropdown options used across the app. Removing a value only hides it from future forms — nothing already recorded is affected.</p>
+
+{% set labels = {
+  'classroom': 'Classrooms',
+  'injury_nature': 'Accident injury types',
+  'accident_body_part': 'Accident body parts',
+  'contact_method': 'Message contact methods',
+  'learning_outcome': 'Learning outcomes',
+} %}
+
+{% for type, params in editable.items() %}
+<div class="card">
+  <h3 style="margin-bottom:4px;">{{ labels.get(type, type) }}</h3>
+  {% if type == 'classroom' %}
+  <p class="field-hint" style="margin-bottom:14px;">
+    A classroom currently in use by an enrolled child or approved staff member can't be removed —
+    reassign them first.
+  </p>
+  {% elif type == 'learning_outcome' %}
+  <p class="field-hint" style="margin-bottom:14px;">
+    Each outcome belongs to one of the five Te Whāriki strands.
+  </p>
+  {% else %}
+  <p class="field-hint" style="margin-bottom:14px;">&nbsp;</p>
+  {% endif %}
+
+  {% if params %}
+  <table class="simple-table" style="margin-bottom:16px;">
+    <thead>
+      <tr>
+        <th>Value</th>
+        {% if type == 'learning_outcome' %}<th>Strand</th>{% endif %}
+        <th>Status</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in params %}
+      <tr>
+        <td>{{ p.param_value }}</td>
+        {% if type == 'learning_outcome' %}<td>{{ p.description or '—' }}</td>{% endif %}
+        <td><span class="status-pill {{ 'status-present' if p.status == 'Active' else 'status-absent' }}">{{ p.status }}</span></td>
+        <td>
+          {% if p.status == 'Active' %}
+          <form method="POST" action="{{ url_for('admin_deactivate_param', param_id=p.id) }}"
+                onsubmit="return confirm('Remove &quot;{{ p.param_value }}&quot; from this list?');">
+            <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+          </form>
+          {% else %}
+          <form method="POST" action="{{ url_for('admin_reactivate_param', param_id=p.id) }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Restore</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state" style="margin-bottom:16px;">No values yet.</div>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('admin_add_param') }}" class="chart-filter-form">
+    <input type="hidden" name="param_type" value="{{ type }}" />
+    <div class="field" style="flex:1;min-width:200px;">
+      <label for="value-{{ type }}">New value</label>
+      <input type="text" id="value-{{ type }}" name="param_value" required />
+    </div>
+    {% if type == 'learning_outcome' %}
+    <div class="field">
+      <label for="strand-{{ type }}">Strand</label>
+      <select id="strand-{{ type }}" name="description" required>
+        {% for s in strands %}
+        <option value="{{ s }}">{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <button type="submit" class="btn btn-accent btn-sm">+ Add</button>
+  </form>
+</div>
+{% endfor %}
+
+<h2 class="profile-section-head">Fixed lists</h2>
+<p class="page-sub" style="margin-bottom:16px;">
+  These aren't editable here — see why under each one.
+</p>
+
+<div class="card">
+  <h3 style="margin-bottom:4px;">Te Whāriki strands</h3>
+  <p class="field-hint" style="margin-bottom:12px;">
+    Fixed by the Te Whāriki early childhood curriculum framework, and also built into the
+    analytics dashboard's strand coverage chart — changing this list here wouldn't update
+    that chart, so it isn't offered.
+  </p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% for p in readonly.get('curriculum_strand', []) %}
+    <span class="tag">{{ p.param_value }}</span>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom:4px;">Attendance statuses</h3>
+  <p class="field-hint" style="margin-bottom:12px;">
+    Enforced directly by the database, independent of this list — editing it here wouldn't
+    change what the attendance form actually accepts.
+  </p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% for p in readonly.get('attendance_status', []) %}
+    <span class="tag">{{ p.param_value }}</span>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

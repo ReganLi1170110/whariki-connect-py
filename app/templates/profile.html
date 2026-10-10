@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% from "_avatar.html" import avatar %}
+{% block title %}My profile — Whāriki Connect{% endblock %}
+{% block content %}
+
+<h1>My profile</h1>
+<p class="page-sub">Update your details and photo. Your email and role are managed by your centre.</p>
+
+<div class="card">
+  <div class="profile-head">
+    {{ avatar(profile.avatar_url, (profile.full_name or '?')[0]|upper, 'avatar avatar-lg') }}
+    <div>
+      <div class="profile-name">{{ profile.full_name }}</div>
+      <div class="profile-meta">
+        {{ profile.role }}{% if profile.classroom %} · {{ profile.classroom }}{% endif %}
+        {% if profile.centre_name %} · {{ profile.centre_name }}{% endif %}
+      </div>
+      <div class="profile-meta">{{ profile.email }}</div>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('update_profile') }}" enctype="multipart/form-data">
+    <div class="form-row">
+      <div class="field">
+        <label for="full_name">Full name</label>
+        <input type="text" id="full_name" name="full_name" required value="{{ profile.full_name or '' }}" />
+      </div>
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" name="phone" placeholder="e.g. 021 000 0000"
+               value="{{ profile.phone or '' }}" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="avatar">Profile photo</label>
+      <input type="file" id="avatar" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" />
+      <p class="field-hint">Optional — your initials are shown if there's no photo. Max 5 MB.</p>
+    </div>
+
+    <button type="submit" class="btn">Save changes</button>
+  </form>
+
+  {% if profile.avatar_url %}
+  <form method="POST" action="{{ url_for('remove_profile_avatar') }}" style="margin-top:10px;">
+    <button type="submit" class="btn btn-secondary btn-sm">Remove photo</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if session.role == 'Parent' %}
+<h2 class="profile-section-head">My children</h2>
+<p class="page-sub">Keep each child's emergency contact up to date, and add a photo if you'd like.</p>
+
+{% for c in children %}
+<div class="card">
+  <div class="profile-head">
+    {{ avatar(c.avatar_url, (c.first_name[0] ~ c.last_name[0])|upper, 'avatar avatar-lg') }}
+    <div>
+      <div class="profile-name">{{ c.first_name }} {{ c.last_name }}</div>
+      <div class="profile-meta">{{ c.classroom }}</div>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('update_child_profile', child_id=c.child_id) }}"
+        enctype="multipart/form-data">
+    <div class="form-row">
+      <div class="field">
+        <label for="ec-{{ c.child_id }}">Emergency contact name</label>
+        <input type="text" id="ec-{{ c.child_id }}" name="emergency_contact"
+               placeholder="e.g. Jane Smith" value="{{ c.emergency_contact or '' }}" />
+      </div>
+      <div class="field">
+        <label for="ep-{{ c.child_id }}">Emergency contact phone</label>
+        <input type="tel" id="ep-{{ c.child_id }}" name="emergency_phone"
+               placeholder="e.g. 022 000 0000" value="{{ c.emergency_phone or '' }}" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="ca-{{ c.child_id }}">{{ c.first_name }}'s photo</label>
+      <input type="file" id="ca-{{ c.child_id }}" name="avatar"
+             accept="image/png,image/jpeg,image/gif,image/webp" />
+      <p class="field-hint">Optional — initials are used if there's no photo. Max 5 MB.</p>
+    </div>
+
+    <h4 class="profile-subsection-head">Health & safety</h4>
+    <p class="field-hint" style="margin-bottom:14px;">
+      Shared with {{ c.first_name }}'s teachers so anyone covering the room can see it at a glance.
+    </p>
+
+    <div class="field">
+      <label for="al-{{ c.child_id }}">Allergies</label>
+      <input type="text" id="al-{{ c.child_id }}" name="allergies"
+             placeholder="e.g. Peanuts (anaphylaxis — EpiPen in bag)" value="{{ c.allergies or '' }}" />
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="mc-{{ c.child_id }}">Medical conditions</label>
+        <input type="text" id="mc-{{ c.child_id }}" name="medical_conditions"
+               placeholder="e.g. Asthma" value="{{ c.medical_conditions or '' }}" />
+      </div>
+      <div class="field">
+        <label for="med-{{ c.child_id }}">Medications</label>
+        <input type="text" id="med-{{ c.child_id }}" name="medications"
+               placeholder="e.g. Ventolin inhaler as needed" value="{{ c.medications or '' }}" />
+      </div>
+    </div>
+    <div class="field">
+      <label for="diet-{{ c.child_id }}">Dietary requirements</label>
+      <input type="text" id="diet-{{ c.child_id }}" name="dietary_requirements"
+             placeholder="e.g. Dairy-free" value="{{ c.dietary_requirements or '' }}" />
+    </div>
+    <div class="field">
+      <label for="mn-{{ c.child_id }}">Other medical notes</label>
+      <textarea id="mn-{{ c.child_id }}" name="medical_notes" rows="2"
+                placeholder="GP contact, care instructions, anything else worth knowing">{{ c.medical_notes or '' }}</textarea>
+    </div>
+
+    <button type="submit" class="btn">Save {{ c.first_name }}'s details</button>
+  </form>
+
+  {% if c.avatar_url %}
+  <form method="POST" action="{{ url_for('remove_child_avatar', child_id=c.child_id) }}"
+        style="margin-top:10px;">
+    <button type="submit" class="btn btn-secondary btn-sm">Remove photo</button>
+  </form>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><div class="empty-state">No children linked to your account yet.</div></div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}Analytics — Whāriki Connect{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>Analytics</h1>
+  </div>
+</div>
+
+{# Carries every OTHER section's current filter values through as hidden
+   fields, so submitting one section's form never wipes out another's. #}
+{% macro carry_others(exclude) %}
+  {% for s in ['strand', 'attendance', 'accident'] if s != exclude %}
+  <input type="hidden" name="{{ s }}_start" value="{{ filters[s].start_raw }}" />
+  <input type="hidden" name="{{ s }}_end" value="{{ filters[s].end_raw }}" />
+  {% endfor %}
+  {% if exclude != 'gaps' %}
+  <input type="hidden" name="gap_weeks" value="{{ gap_weeks }}" />
+  {% endif %}
+  {% if exclude != 'routine' %}
+  <input type="hidden" name="routine_start" value="{{ filters.routine.start_raw }}" />
+  <input type="hidden" name="routine_end" value="{{ filters.routine.end_raw }}" />
+  <input type="hidden" name="routine_child_id" value="{{ routine_child_id or '' }}" />
+  {% endif %}
+{% endmacro %}
+
+{% macro date_filter(section) %}
+<form method="GET" action="{{ url_for('analytics') }}" class="chart-filter-form">
+  {{ carry_others(section) }}
+  <div class="field">
+    <label for="{{ section }}_start">From</label>
+    <input type="date" id="{{ section }}_start" name="{{ section }}_start" value="{{ filters[section].start_raw }}" />
+  </div>
+  <div class="field">
+    <label for="{{ section }}_end">To</label>
+    <input type="date" id="{{ section }}_end" name="{{ section }}_end" value="{{ filters[section].end_raw }}" />
+  </div>
+  <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+  {% if filters[section].start_raw or filters[section].end_raw %}
+  <a href="{{ url_for('analytics') }}" class="btn btn-secondary btn-sm">Clear</a>
+  {% endif %}
+</form>
+{% endmacro %}
+
+{% macro download_link(endpoint, kwargs, filename) %}
+<a href="{{ url_for(endpoint, download=1, **kwargs) }}" download="{{ filename }}" class="chart-download">⬇ Download PNG</a>
+{% endmacro %}
+
+<details class="accordion-card" open>
+  <summary class="accordion-header">
+    <span class="accordion-icon">📝</span>
+    <span class="accordion-title">Documentation gaps – children with no recent learning story</span>
+    <span class="accordion-chevron">▸</span>
+  </summary>
+  <div class="accordion-body">
+    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
+      Enrolled children in {{ classroom_label }} with no published learning story in the chosen period,
+      so no child is missed. Children who have never had a story are listed first.
+    </p>
+    <form method="GET" action="{{ url_for('analytics') }}" class="chart-filter-form">
+      {{ carry_others('gaps') }}
+      <div class="field">
+        <label for="gap_weeks">No story in the last</label>
+        <select id="gap_weeks" name="gap_weeks" onchange="this.form.submit()">
+          {% for w in [2, 4, 6, 8] %}<option value="{{ w }}" {{ 'selected' if gap_weeks == w }}>{{ w }} weeks</option>{% endfor %}
+        </select>
+      </div>
+      <noscript><button type="submit" class="btn btn-secondary btn-sm">Show</button></noscript>
+    </form>
+    {% if gap_rows %}
+      <p style="margin:6px 0 10px;"><strong>{{ gap_rows|length }} of {{ gap_total }}</strong> children have no learning story in the last {{ gap_weeks }} weeks.</p>
+      <table class="simple-table">
+        <thead><tr><th>Child</th><th>Room</th><th>Last learning story</th><th></th></tr></thead>
+        <tbody>
+          {% for g in gap_rows %}
+          <tr>
+            <td><a href="{{ url_for('child_profile', child_id=g.child_id) }}" style="color:var(--color-primary);font-weight:600;">{{ g.first_name }} {{ g.last_name }}</a></td>
+            <td>{{ g.classroom }}</td>
+            <td>
+              {% if g.last_story_at %}{{ g.last_story_at.strftime('%d %b %Y') }}
+                <span class="page-sub" style="font-size:0.78rem;">({{ (today - g.last_story_at).days }} days ago)</span>
+              {% else %}<span class="status-pill status-absent">never</span>{% endif %}
+            </td>
+            <td>{% if session.role == 'Teacher' %}<a href="{{ url_for('new_learning_story', child_id=g.child_id) }}" class="btn btn-accent btn-sm">Write a story</a>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty-state">Every child in {{ classroom_label }} has at least one learning story in the last {{ gap_weeks }} weeks. 🎉</div>
+    {% endif %}
+  </div>
+</details>
+
+<details class="accordion-card" {{ 'open' if filters.strand.is_open }}>
+  <summary class="accordion-header">
+    <span class="accordion-icon">📖</span>
+    <span class="accordion-title">Learning story coverage by Te Whāriki strand</span>
+    <span class="accordion-chevron">▸</span>
+  </summary>
+  <div class="accordion-body">
+    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
+      How published learning stories are spread across the five strands — useful for
+      spotting a strand that's been under-documented.
+    </p>
+    {{ date_filter('strand') }}
+    {% if strand_empty and not filters.strand.start_raw and not filters.strand.end_raw %}
+      <div class="empty-state">No published learning stories yet.</div>
+    {% else %}
+      {% set strand_kwargs = {'start': filters.strand.start_raw, 'end': filters.strand.end_raw} %}
+      <img src="{{ url_for('strand_coverage_chart', **strand_kwargs) }}"
+           alt="Learning stories per Te Whāriki strand" class="analytics-chart"
+           onerror="this.closest('.accordion-body').querySelector('.chart-fallback-strand').style.display='block'; this.style.display='none';" />
+      {{ download_link('strand_coverage_chart', strand_kwargs, 'strand_coverage.png') }}
+      <div class="chart-fallback-strand" style="display:none;">
+        <div class="empty-state">
+          The chart couldn't be generated — open
+          <a href="{{ url_for('strand_coverage_chart', **strand_kwargs) }}" target="_blank" style="color:var(--color-primary);font-weight:600;">this link directly</a>
+          to see the error message from R.
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</details>
+
+<details class="accordion-card" {{ 'open' if filters.attendance.is_open }}>
+  <summary class="accordion-header">
+    <span class="accordion-icon">🗓️</span>
+    <span class="accordion-title">Attendance trends</span>
+    <span class="accordion-chevron">▸</span>
+  </summary>
+  <div class="accordion-body">
+    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
+      Weekly attendance rate over time — a dip or a recovery shows up here before it
+      would in the day-by-day calendar.
+    </p>
+    {{ date_filter('attendance') }}
+    {% if attendance_empty %}
+      <div class="empty-state">No attendance records in this range.</div>
+    {% else %}
+      {% set attendance_kwargs = {'start': filters.attendance.start_raw, 'end': filters.attendance.end_raw} %}
+      <img src="{{ url_for('attendance_trend_chart', **attendance_kwargs) }}"
+           alt="Weekly attendance rate" class="analytics-chart"
+           onerror="this.closest('.accordion-body').querySelector('.chart-fallback-attendance').style.display='block'; this.style.display='none';" />
+      {{ download_link('attendance_trend_chart', attendance_kwargs, 'attendance_trend.png') }}
+      <div class="chart-fallback-attendance" style="display:none;">
+        <div class="empty-state">
+          The chart couldn't be generated — open
+          <a href="{{ url_for('attendance_trend_chart', **attendance_kwargs) }}" target="_blank" style="color:var(--color-primary);font-weight:600;">this link directly</a>
+          to see the error message from R.
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</details>
+
+<details class="accordion-card" {{ 'open' if filters.accident.is_open }}>
+  <summary class="accordion-header">
+    <span class="accordion-icon">🩹</span>
+    <span class="accordion-title">Accident frequency</span>
+    <span class="accordion-chevron">▸</span>
+  </summary>
+  <div class="accordion-body">
+    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
+      Submitted accident forms grouped by injury type, most common first.
+    </p>
+    {{ date_filter('accident') }}
+    {% if accident_empty %}
+      <div class="empty-state">No accident forms in this range.</div>
+    {% else %}
+      {% set accident_kwargs = {'start': filters.accident.start_raw, 'end': filters.accident.end_raw} %}
+      <img src="{{ url_for('accident_frequency_chart', **accident_kwargs) }}"
+           alt="Accident frequency by injury type" class="analytics-chart"
+           onerror="this.closest('.accordion-body').querySelector('.chart-fallback-accident').style.display='block'; this.style.display='none';" />
+      {{ download_link('accident_frequency_chart', accident_kwargs, 'accident_frequency.png') }}
+      <div class="chart-fallback-accident" style="display:none;">
+        <div class="empty-state">
+          The chart couldn't be generated — open
+          <a href="{{ url_for('accident_frequency_chart', **accident_kwargs) }}" target="_blank" style="color:var(--color-primary);font-weight:600;">this link directly</a>
+          to see the error message from R.
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</details>
+
+<details class="accordion-card" {{ 'open' if filters.routine.is_open }}>
+  <summary class="accordion-header">
+    <span class="accordion-icon">🍽️</span>
+    <span class="accordion-title">Routine trends by child</span>
+    <span class="accordion-chevron">▸</span>
+  </summary>
+  <div class="accordion-body">
+    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
+      Weekly meal score and toileting issue rate for one child — pick a child below to see
+      whether things are trending better or worse over time.
+    </p>
+
+    <div class="metric-explainer">
+      <div class="metric-explainer-item">
+        <strong>Meals eaten (score):</strong> each meal is scored by how much the child ate
+        — eating all of it scores 100, most of it scores around 66, some of it scores around 33,
+        and none of it scores 0. The chart shows the average of those scores across every meal
+        recorded that week, so <strong>100 means they consistently finished their food that
+        week, and 0 means they were consistently eating little to nothing.</strong>
+      </div>
+      <div class="metric-explainer-item">
+        <strong>Toileting issues (%):</strong> out of every nappy change or toilet visit
+        recorded that week, this is the share that needed extra attention — a soiled nappy or
+        a toileting accident, rather than a routine wet nappy or a successful toilet trip.
+        <strong>0% means no issues that week; 30% means roughly 3 in every 10 toileting
+        events needed extra care.</strong>
+      </div>
+    </div>
+
+    <form method="GET" action="{{ url_for('analytics') }}" class="chart-filter-form">
+      {{ carry_others('routine') }}
+      <div class="field">
+        <label for="routine_child_id">Child</label>
+        <select id="routine_child_id" name="routine_child_id" onchange="this.form.submit()">
+          <option value="">— Select a child —</option>
+          {% for c in routine_children %}
+          <option value="{{ c.child_id }}" {{ 'selected' if routine_child_id == c.child_id }}>
+            {{ c.first_name }} {{ c.last_name }} ({{ c.classroom }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="routine_start">From</label>
+        <input type="date" id="routine_start" name="routine_start" value="{{ filters.routine.start_raw }}" />
+      </div>
+      <div class="field">
+        <label for="routine_end">To</label>
+        <input type="date" id="routine_end" name="routine_end" value="{{ filters.routine.end_raw }}" />
+      </div>
+      <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      {% if filters.routine.start_raw or filters.routine.end_raw or routine_child_id %}
+      <a href="{{ url_for('analytics') }}" class="btn btn-secondary btn-sm">Clear</a>
+      {% endif %}
+    </form>
+
+    {% if not routine_child_id %}
+      <div class="empty-state">Select a child above to see their routine trend.</div>
+    {% elif routine_empty %}
+      <div class="empty-state">No routine records for this child in this range.</div>
+    {% else %}
+      {% set routine_kwargs = {'child_id': routine_child_id, 'start': filters.routine.start_raw, 'end': filters.routine.end_raw} %}
+      <img src="{{ url_for('routine_trend_chart', **routine_kwargs) }}"
+           alt="Weekly routine trends" class="analytics-chart"
+           onerror="this.closest('.accordion-body').querySelector('.chart-fallback-routine').style.display='block'; this.style.display='none';" />
+      {{ download_link('routine_trend_chart', routine_kwargs, 'routine_trend.png') }}
+      <div class="chart-fallback-routine" style="display:none;">
+        <div class="empty-state">
+          The chart couldn't be generated — open
+          <a href="{{ url_for('routine_trend_chart', **routine_kwargs) }}" target="_blank" style="color:var(--color-primary);font-weight:600;">this link directly</a>
+          to see the error message from R.
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</details>
+
+{% endblock %}

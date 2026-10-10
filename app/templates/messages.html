@@ -4,49 +4,348 @@
 
 <h1>Messages</h1>
 <p class="page-sub">Chat directly with your child's teacher, or with a child's parents.</p>
+{# UAT feedback: teachers were worried about parents expecting replies
+   after work hours, so families are told up front when to expect one. #}
+<div class="hours-notice">
+  {% if session.role == 'Parent' %}
+  🕒 Teachers read and reply to messages during centre hours (Monday–Friday, 7:30am–5:30pm).
+  For anything urgent about your child today, please phone the centre.
+  {% else %}
+  🕒 Families are told that messages are answered during centre hours (Monday–Friday, 7:30am–5:30pm),
+  so messages that arrive after hours can wait until your next shift.
+  {% endif %}
+</div>
 
-<div class="card messages-shell">
-  <div class="contact-list">
-    {% if contacts %}
-      {% for c in contacts %}
-        <a class="contact-item {{ 'active' if active_contact_id == c.user_id and active_child_id == c.child_id }}"
-           href="{{ url_for('messages', **({'with': c.user_id, 'child_id': c.child_id} if c.child_id else {'with': c.user_id})) }}">
-          <span class="contact-name">
-            {% if unread.get(c.user_id) %}<span class="unread-dot" title="{{ unread.get(c.user_id) }} unread"></span>{% endif %}
-            {{ c.full_name }}
-          </span>
-          {% if c.child_first_name %}<br><span style="font-size:0.72rem;color:var(--color-ink-soft);">re: {{ c.child_first_name }}</span>{% endif %}
-        </a>
-      {% endfor %}
-    {% else %}
-      <div class="empty-state" style="padding:20px 0;">No contacts yet.</div>
-    {% endif %}
+<div class="messages-layout {{ 'search-open' if search_query }}" id="messagesLayout">
+  <div class="card messages-shell">
+    <div class="contact-list">
+      {% if session.role in ('Teacher', 'Admin') %}
+      <button type="button" class="btn btn-accent btn-sm btn-block" style="margin-bottom:10px;"
+              onclick="document.getElementById('announcementModal').style.display='flex'">
+        📢 New announcement
+      </button>
+      {% endif %}
+
+      <div class="contact-search">
+        <input type="text" id="contactFilter" placeholder="Search names…"
+               autocomplete="off" oninput="filterContacts(this.value)" />
+        <span class="contact-search-icon" aria-hidden="true">🔍</span>
+      </div>
+
+      {% if contacts %}
+        <div id="contactItems">
+          {% for c in contacts %}
+            <a class="contact-item {{ 'active' if active_contact_id == c.user_id and active_child_id == c.child_id }}"
+               data-name="{{ c.full_name|lower }}"
+               data-child="{{ (c.child_first_name or '')|lower }}"
+               href="{{ url_for('messages', **({'with': c.user_id, 'child_id': c.child_id} if c.child_id else {'with': c.user_id})) }}">
+              <span class="contact-name">
+                {% if unread.get(c.user_id) %}<span class="unread-dot" title="{{ unread.get(c.user_id) }} unread"></span>{% endif %}
+                {{ c.full_name }}
+              </span>
+              {# Teachers are staff, so a parent sees their room, not a child. #}
+              {% if session.role == 'Parent' %}
+                {% if c.classroom %}<br><span class="contact-child">{{ c.classroom }}</span>{% endif %}
+              {% elif c.child_first_name %}
+                <br><span class="contact-child">Child: {{ c.child_first_name }}</span>
+              {% endif %}
+            </a>
+          {% endfor %}
+        </div>
+        <div class="empty-state contact-no-match" id="contactNoMatch" style="display:none;padding:20px 0;">
+          No names match that search.
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding:20px 0;">No contacts yet.</div>
+      {% endif %}
+    </div>
+
+    <div class="chat-pane">
+      {% if active_contact_id %}
+        <div class="chat-window" id="chatWindow">
+          {% if thread %}
+            {% for m in thread %}
+              <div class="chat-bubble {{ 'mine' if m.sender_id == session.user_id else 'theirs' }} {{ 'chat-bubble-broadcast' if m.is_broadcast }}"
+                   id="msg-{{ m.message_id }}">
+                {% if m.is_broadcast %}<div class="broadcast-tag">📢 Announcement</div>{% endif %}
+                {{ m.content }}
+                <div class="meta">{{ m.created_at.strftime('%d %b, %I:%M %p') }}</div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-state">No messages yet — say hello!</div>
+          {% endif %}
+        </div>
+
+        <form method="POST" action="{{ url_for('send_message') }}" class="chat-input-row">
+          <input type="hidden" name="receiver_id" value="{{ active_contact_id }}" />
+          {% if active_child_id %}<input type="hidden" name="child_id" value="{{ active_child_id }}" />{% endif %}
+
+          <div class="chat-input-wrap">
+            <input type="text" name="content" id="chatInput" placeholder="Type a message…"
+                   required autocomplete="off" />
+            <button type="button" class="emoji-btn" onclick="toggleEmoji()" title="Insert emoji">🙂</button>
+
+            <div class="emoji-panel" id="emojiPanel">
+              <div class="emoji-tabs" id="emojiTabs"></div>
+              <div class="emoji-grid" id="emojiGrid"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn">Send</button>
+        </form>
+      {% else %}
+        <div class="empty-state" style="padding:60px 20px;">Select a contact to start chatting.</div>
+      {% endif %}
+    </div>
   </div>
 
-  <div>
-    {% if active_contact_id %}
-      <div class="chat-window">
-        {% if thread %}
-          {% for m in thread %}
-            <div class="chat-bubble {{ 'mine' if m.sender_id == session.user_id else 'theirs' }}">
-              {{ m.content }}
-              <div class="meta">{{ m.created_at.strftime('%d %b, %I:%M %p') }}</div>
+  <!-- Collapsible chat-history search panel -->
+  <aside class="search-panel" id="searchPanel">
+    <button type="button" class="search-toggle" onclick="toggleSearch()" id="searchToggle">
+      <span class="search-toggle-icon">🔍</span>
+      <span class="search-toggle-label">Search chat history</span>
+      <span class="search-toggle-chevron" id="searchChevron">›</span>
+    </button>
+
+    <div class="search-body" id="searchBody">
+      <form method="GET" action="{{ url_for('messages') }}">
+        {% if active_contact_id %}<input type="hidden" name="with" value="{{ active_contact_id }}" />{% endif %}
+        {% if active_child_id %}<input type="hidden" name="child_id" value="{{ active_child_id }}" />{% endif %}
+
+        <div class="field">
+          <input type="text" name="q" placeholder="Search messages…" value="{{ search_query or '' }}"
+                 autocomplete="off" />
+        </div>
+
+        {% if active_contact_id %}
+        <div class="field search-scope">
+          <label class="scope-option">
+            <input type="radio" name="scope" value="all" {{ 'checked' if search_scope != 'thread' }} />
+            <span>All conversations</span>
+          </label>
+          <label class="scope-option">
+            <input type="radio" name="scope" value="thread" {{ 'checked' if search_scope == 'thread' }} />
+            <span>This conversation</span>
+          </label>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-block btn-sm">Search</button>
+        {% if search_query %}
+        <a href="{{ url_for('messages', **({'with': active_contact_id, 'child_id': active_child_id} if active_contact_id else {})) }}"
+           class="search-clear">Clear search</a>
+        {% endif %}
+      </form>
+
+      {% if search_query %}
+      <div class="search-results">
+        <div class="search-results-head">
+          {{ search_results|length }} result{{ 's' if search_results|length != 1 }} for “{{ search_query }}”
+        </div>
+
+        {% if search_results %}
+          {% for r in search_results %}
+          <a class="search-result"
+             href="{{ url_for('messages', **({'with': (r.receiver_id if r.sender_id == session.user_id else r.sender_id), 'child_id': r.child_id} if r.child_id else {'with': (r.receiver_id if r.sender_id == session.user_id else r.sender_id)})) }}#msg-{{ r.message_id }}">
+            <div class="search-result-head">
+              <span class="search-result-who">
+                {{ 'You → ' ~ r.receiver_name if r.sender_id == session.user_id else r.sender_name ~ ' → you' }}
+              </span>
+              <span class="search-result-date">{{ r.created_at.strftime('%d %b %Y') }}</span>
             </div>
+            {% if r.child_first_name %}
+            <div class="search-result-child">
+              {{ 'About' if session.role == 'Parent' else 'Child:' }} {{ r.child_first_name }}
+            </div>
+            {% endif %}
+            <div class="search-result-body">{{ r.content }}</div>
+          </a>
           {% endfor %}
         {% else %}
-          <div class="empty-state">No messages yet — say hello!</div>
+          <div class="empty-state" style="padding:24px 8px;font-size:0.85rem;">
+            No messages matched that search.
+          </div>
         {% endif %}
       </div>
-      <form method="POST" action="{{ url_for('send_message') }}" class="chat-input-row">
-        <input type="hidden" name="receiver_id" value="{{ active_contact_id }}" />
-        {% if active_child_id %}<input type="hidden" name="child_id" value="{{ active_child_id }}" />{% endif %}
-        <input type="text" name="content" placeholder="Type a message…" required style="flex:1;padding:10px 14px;border:1.5px solid var(--color-border);border-radius:6px;" />
-        <button type="submit" class="btn">Send</button>
-      </form>
-    {% else %}
-      <div class="empty-state" style="padding:60px 20px;">Select a contact to start chatting.</div>
-    {% endif %}
+      {% else %}
+      <p class="search-hint">
+        Search across every message you've sent or received. Open a conversation first
+        to narrow the search to just that thread.
+      </p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+
+{% if session.role in ('Teacher', 'Admin') %}
+<div class="modal-backdrop" id="announcementModal">
+  <div class="modal">
+    <h3 style="margin-bottom:4px;">New announcement</h3>
+    <p class="field-hint" style="margin-bottom:16px;">
+      Sends one message to every parent in the chosen room — it'll appear in their normal chat with you.
+    </p>
+    <form method="POST" action="{{ url_for('send_announcement') }}">
+      {% if session.role == 'Teacher' %}
+        <p style="font-size:0.88rem;margin-bottom:14px;">
+          Sending to: <strong>parents in {{ session.classroom }}</strong>
+        </p>
+      {% else %}
+        <div class="field">
+          <label for="ann_classroom">Send to</label>
+          <select id="ann_classroom" name="classroom" required>
+            {% for c in announcement_classrooms %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+        </div>
+      {% endif %}
+      <div class="field" style="margin-bottom:14px;">
+        <label for="ann_content">Message</label>
+        <textarea id="ann_content" name="content" rows="4" required
+                  placeholder="e.g. Reminder: please bring a sun hat and water bottle tomorrow for our beach trip."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('announcementModal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-accent">Send announcement</button>
+      </div>
+    </form>
   </div>
 </div>
+<script>
+  document.getElementById('announcementModal').addEventListener('click', function (e) {
+    if (e.target === this) this.style.display = 'none';
+  });
+</script>
+{% endif %}
+
+<script>
+  /* ---- Contact list fuzzy filter (matches name or child's name) ---- */
+  function filterContacts(term) {
+    const q = term.trim().toLowerCase();
+    const items = document.querySelectorAll('#contactItems .contact-item');
+    let shown = 0;
+    items.forEach(function (el) {
+      const name = el.dataset.name || '';
+      const child = el.dataset.child || '';
+      // Subsequence match, so "cp" still finds "Chris Patel".
+      const match = !q || fuzzy(name, q) || fuzzy(child, q);
+      el.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    const noMatch = document.getElementById('contactNoMatch');
+    if (noMatch) noMatch.style.display = shown === 0 ? '' : 'none';
+  }
+
+  function fuzzy(haystack, needle) {
+    if (haystack.indexOf(needle) !== -1) return true;
+    let i = 0;
+    for (let c = 0; c < haystack.length && i < needle.length; c++) {
+      if (haystack[c] === needle[i]) i++;
+    }
+    return i === needle.length;
+  }
+
+  /* ---- Collapsible search panel ---- */
+  function toggleSearch() {
+    const layout = document.getElementById('messagesLayout');
+    layout.classList.toggle('search-open');
+    const open = layout.classList.contains('search-open');
+    document.getElementById('searchChevron').textContent = open ? '›' : '‹';
+    try { localStorage.setItem('wc_search_open', open ? '1' : '0'); } catch (e) {}
+  }
+
+  (function restoreSearchState() {
+    const layout = document.getElementById('messagesLayout');
+    let open = layout.classList.contains('search-open');
+    if (!open) {
+      try { open = localStorage.getItem('wc_search_open') === '1'; } catch (e) {}
+      if (open) layout.classList.add('search-open');
+    }
+    document.getElementById('searchChevron').textContent = open ? '›' : '‹';
+  })();
+
+  /* ---- Emoji picker ---- */
+  const EMOJI_GROUPS = {
+    'Smileys': ['😀','😃','😄','😁','😊','😍','🥰','😘','😉','🙂','🤗','🤔','😌','😴','😅','😂','🥳','😎','🤩','🥺','😢','😭','😳','🙃','😇'],
+    'People': ['👶','🧒','👧','👦','👩','👨','👵','👴','🧑‍🏫','👩‍🏫','👨‍🏫','👪','🤱','🙋','🙌','👏','🤝','👍','👎','✌️','🤟','💪','🫶','👋','🙏'],
+    'Nature': ['🌿','🌱','🍃','🌳','🌲','🌸','🌼','🌻','🌈','☀️','⛅','🌧️','❄️','🔥','💧','🐛','🦋','🐝','🐦','🐢','🐨','🦔','🐟','🌊','🍄'],
+    'Activity': ['🎨','✏️','📚','📖','📝','🧩','⚽','🏀','🎵','🎶','🎸','🪁','🧸','🪀','🎈','🎉','🏃','🤸','🧗','🚲','🏊','🥁','🎭','🖍️','🧱'],
+    'Food': ['🍎','🍌','🍓','🍇','🥕','🥦','🍞','🧀','🥪','🍕','🍜','🍚','🥛','🧃','🍪','🎂','🍰','🍦','🍯','🥧','🍊','🥝','🍉','🥑','🍠'],
+    'Objects': ['❤️','🧡','💛','💚','💙','💜','⭐','✨','🌟','💫','✅','❗','❓','📅','⏰','📸','🎁','🏆','🥇','📌','💡','🔔','📢','🩹','🧴']
+  };
+
+  function buildEmojiPanel() {
+    const tabs = document.getElementById('emojiTabs');
+    const grid = document.getElementById('emojiGrid');
+    if (!tabs || !grid) return;
+
+    Object.keys(EMOJI_GROUPS).forEach(function (group, idx) {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'emoji-tab' + (idx === 0 ? ' active' : '');
+      tab.textContent = group;
+      tab.onclick = function () {
+        document.querySelectorAll('.emoji-tab').forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        renderEmojis(group);
+      };
+      tabs.appendChild(tab);
+    });
+    renderEmojis(Object.keys(EMOJI_GROUPS)[0]);
+  }
+
+  function renderEmojis(group) {
+    const grid = document.getElementById('emojiGrid');
+    grid.innerHTML = '';
+    EMOJI_GROUPS[group].forEach(function (e) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'emoji-item';
+      b.textContent = e;
+      b.onclick = function () { insertEmoji(e); };
+      grid.appendChild(b);
+    });
+  }
+
+  function insertEmoji(emoji) {
+    const input = document.getElementById('chatInput');
+    if (!input) return;
+    const start = input.selectionStart || input.value.length;
+    const end = input.selectionEnd || input.value.length;
+    input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+    input.focus();
+    const pos = start + emoji.length;
+    input.setSelectionRange(pos, pos);
+  }
+
+  function toggleEmoji() {
+    const panel = document.getElementById('emojiPanel');
+    panel.classList.toggle('open');
+  }
+
+  document.addEventListener('click', function (e) {
+    const panel = document.getElementById('emojiPanel');
+    if (!panel) return;
+    if (!panel.contains(e.target) && !e.target.classList.contains('emoji-btn')) {
+      panel.classList.remove('open');
+    }
+  });
+
+  buildEmojiPanel();
+
+  /* ---- Scroll to the newest message, or to a searched-for one ---- */
+  (function scrollChat() {
+    const win = document.getElementById('chatWindow');
+    if (!win) return;
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash);
+      if (target) {
+        target.classList.add('chat-bubble-highlight');
+        target.scrollIntoView({ block: 'center' });
+        return;
+      }
+    }
+    win.scrollTop = win.scrollHeight;
+  })();
+</script>
 
 {% endblock %}

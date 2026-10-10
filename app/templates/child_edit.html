@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ child.first_name }} {{ child.last_name }} — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('child_profile', child_id=child.child_id) }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to profile</a>
+
+<h1>Edit {{ child.first_name }} {{ child.last_name }}</h1>
+<p class="page-sub">
+  Name, date of birth and classroom only. Health &amp; safety info, emergency contact and photo
+  are edited from the child's profile page.
+</p>
+
+<form method="POST" action="{{ url_for('update_child_basic_info', child_id=child.child_id) }}">
+  <div class="card">
+    <div class="form-row">
+      <div class="field">
+        <label for="first_name">First name</label>
+        <input type="text" id="first_name" name="first_name" required
+               value="{{ (form.first_name if form else child.first_name) }}" />
+      </div>
+      <div class="field">
+        <label for="last_name">Last name</label>
+        <input type="text" id="last_name" name="last_name" required
+               value="{{ (form.last_name if form else child.last_name) }}" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="date_of_birth">Date of birth</label>
+        <input type="date" id="date_of_birth" name="date_of_birth" required
+               value="{{ (form.date_of_birth if form else child.date_of_birth.isoformat()) }}" />
+      </div>
+      <div class="field">
+        <label for="classroom">Classroom</label>
+        <select id="classroom" name="classroom" required>
+          {% for c in classrooms %}
+          <option value="{{ c }}" {{ 'selected' if (form.classroom if form else child.classroom) == c }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-accent">Save changes</button>
+  </div>
+</form>
+
+{% endblock %}

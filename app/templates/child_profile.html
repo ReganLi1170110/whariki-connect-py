@@ -1,20 +1,29 @@
 {% extends "base.html" %}
+{% from "_avatar.html" import avatar %}
 {% block title %}{{ child.first_name }} {{ child.last_name }} — Whāriki Connect{% endblock %}
 {% block content %}
 
 <a href="{{ url_for('children_list') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to children</a>
 
 <div class="card" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
-  <div>
+  <div style="display:flex;gap:16px;align-items:flex-start;">
+    {{ avatar(child.avatar_url, (child.first_name[0] ~ child.last_name[0])|upper, 'avatar avatar-lg') }}
+    <div>
     <h1>{{ child.first_name }} {{ child.last_name }}</h1>
     <p class="page-sub" style="margin-bottom:4px;">{{ child.classroom }} · Born {{ child.date_of_birth.strftime('%d %b %Y') }}</p>
     <p style="font-size:0.85rem;color:var(--color-ink-soft);">Emergency contact: {{ child.emergency_contact or '—' }} ({{ child.emergency_phone or '—' }})</p>
     <p style="font-size:0.85rem;color:var(--color-ink-soft);">
       Parents/guardians: {{ parents|map(attribute='full_name')|join(', ') if parents else '—' }}
     </p>
+    </div>
   </div>
   <div>
-    {% if today_attendance and today_attendance.check_in_time and not today_attendance.check_out_time %}
+    {% if session.role == 'Admin' %}
+      <a href="{{ url_for('edit_child', child_id=child.child_id) }}" class="btn btn-secondary btn-sm" style="margin-bottom:8px;display:inline-flex;">✎ Edit basic info</a><br />
+    {% endif %}
+    {% if child.enrolment_status == 'withdrawn' %}
+      <span class="status-pill status-absent">Withdrawn</span>
+    {% elif today_attendance and today_attendance.check_in_time and not today_attendance.check_out_time %}
       <span class="status-pill status-present">Checked in today</span>
     {% elif today_attendance and today_attendance.check_out_time %}
       <span class="status-pill status-present">Checked out today</span>
@@ -23,6 +32,56 @@
     {% endif %}
   </div>
 </div>
+
+{% if session.role == 'Admin' %}
+<div class="card {{ 'health-card-alert' if child.enrolment_status == 'withdrawn' }}">
+  <h3 style="margin-bottom:12px;">Enrolment</h3>
+  {% if child.enrolment_status == 'withdrawn' %}
+    <p class="page-sub" style="margin-bottom:4px;">
+      Withdrawn on {{ child.withdrawal_date.strftime('%d %b %Y') if child.withdrawal_date else 'an unknown date' }}.
+    </p>
+    {% if child.withdrawal_notes %}
+    <p class="page-sub" style="margin-bottom:12px;">Notes: {{ child.withdrawal_notes }}</p>
+    {% endif %}
+    <p class="page-sub" style="font-size:0.82rem;margin-bottom:12px;">
+      All of {{ child.first_name }}'s records are still here - withdrawing only hides them
+      from the default children list.
+    </p>
+    <form method="POST" action="{{ url_for('reenrol_child', child_id=child.child_id) }}">
+      <button type="submit" class="btn btn-accent btn-sm">↩ Re-enrol</button>
+    </form>
+  {% else %}
+    <p class="page-sub" style="font-size:0.85rem;margin-bottom:12px;">
+      Mark {{ child.first_name }} as no longer attending. Nothing is deleted - all learning
+      stories, attendance and other records are kept, just hidden from the default lists.
+    </p>
+    <form method="POST" action="{{ url_for('withdraw_child', child_id=child.child_id) }}"
+          onsubmit="return confirm('Withdraw {{ child.first_name }} {{ child.last_name }}? Their records will be kept but hidden from the default lists.');"
+          class="chart-filter-form">
+      <div class="field">
+        <label for="withdrawal_date">Last day</label>
+        <input type="date" id="withdrawal_date" name="withdrawal_date" value="{{ today_iso }}" />
+      </div>
+      <div class="field" style="flex:1;min-width:200px;">
+        <label for="withdrawal_notes">Notes (optional)</label>
+        <input type="text" id="withdrawal_notes" name="withdrawal_notes" placeholder="e.g. Moved to another centre" />
+      </div>
+      <button type="submit" class="btn btn-secondary btn-sm">Withdraw</button>
+    </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if child.allergies or child.medical_conditions %}
+<a href="#health" class="safety-alert">
+  <span class="safety-alert-icon">⚠️</span>
+  <span>
+    <strong>Allergies / medical conditions on file</strong> —
+    {% if child.allergies %}{{ child.allergies|truncate(70) }}{% else %}{{ child.medical_conditions|truncate(70) }}{% endif %}
+    <span class="safety-alert-link">See details ↓</span>
+  </span>
+</a>
+{% endif %}
 
 <div class="grid-cards">
   <a href="{{ url_for('learning_stories', child_id=child.child_id) }}" class="card quick-link">
@@ -37,7 +96,412 @@
     <div class="num">{{ accidents|length }}</div>
     <div class="label">Accident forms</div>
   </a>
+  <a href="#immunizations" class="card quick-link">
+    <div class="num">{{ immunizations|length }}</div>
+    <div class="label">Immunisation records</div>
+  </a>
 </div>
+
+<div class="card" id="health">
+  <div class="page-head" style="margin-bottom:6px;">
+    <h3>Health & safety</h3>
+    {% if session.role in ('Teacher', 'Admin') %}
+    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('healthModal').style.display='flex'">Edit</button>
+    {% endif %}
+  </div>
+  <p class="page-sub" style="font-size:0.86rem;margin-bottom:16px;">
+    Allergies, medical conditions and dietary requirements every teacher covering this room should know about.
+    {% if session.role == 'Parent' %}Update this from <a href="{{ url_for('profile') }}">your profile</a>.{% endif %}
+  </p>
+
+  <div class="health-grid">
+    <div class="health-item {{ 'health-item-flag' if child.allergies }}">
+      <div class="health-label">Allergies</div>
+      <div class="health-value">{{ child.allergies or 'None recorded' }}</div>
+    </div>
+    <div class="health-item {{ 'health-item-flag' if child.medical_conditions }}">
+      <div class="health-label">Medical conditions</div>
+      <div class="health-value">{{ child.medical_conditions or 'None recorded' }}</div>
+    </div>
+    <div class="health-item">
+      <div class="health-label">Medications</div>
+      <div class="health-value">{{ child.medications or 'None recorded' }}</div>
+    </div>
+    <div class="health-item">
+      <div class="health-label">Dietary requirements</div>
+      <div class="health-value">{{ child.dietary_requirements or 'None recorded' }}</div>
+    </div>
+  </div>
+  {% if child.medical_notes %}
+  <div class="health-item" style="margin-top:12px;">
+    <div class="health-label">Other notes</div>
+    <div class="health-value">{{ child.medical_notes }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card" id="pickups">
+  <h3 style="margin-bottom:4px;">Authorized pickup people</h3>
+  <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
+    Anyone besides {{ child.first_name }}'s own parents/guardians who is allowed to collect
+    them, for staff to check at pickup time.
+  </p>
+
+  {% if pickups %}
+  <table class="simple-table" style="margin-bottom:{{ '16px' if can_manage_pickups else '0' }};">
+    <thead>
+      <tr><th>Name</th><th>Relationship</th><th>Phone</th><th>Notes</th>
+        {% if can_manage_pickups %}<th></th>{% endif %}</tr>
+    </thead>
+    <tbody>
+      {% for p in pickups %}
+      <tr>
+        <td>{{ p.full_name }}</td>
+        <td>{{ p.relationship or '—' }}</td>
+        <td>{{ p.phone or '—' }}</td>
+        <td>{{ p.notes or '—' }}</td>
+        {% if can_manage_pickups %}
+        <td>
+          <form method="POST" action="{{ url_for('delete_pickup_person', child_id=child.child_id, pickup_id=p.pickup_id) }}"
+                onsubmit="return confirm('Remove {{ p.full_name }} from the authorized pickup list?');">
+            <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state" style="margin-bottom:{{ '16px' if can_manage_pickups else '0' }};">Nobody added yet.</div>
+  {% endif %}
+
+  {% if can_manage_pickups %}
+  <form method="POST" action="{{ url_for('add_pickup_person', child_id=child.child_id) }}" class="chart-filter-form">
+    <div class="field">
+      <label for="pickup_name">Name</label>
+      <input type="text" id="pickup_name" name="full_name" required placeholder="e.g. Grandma Wiremu" />
+    </div>
+    <div class="field">
+      <label for="pickup_relationship">Relationship</label>
+      <input type="text" id="pickup_relationship" name="relationship" placeholder="e.g. Grandmother" />
+    </div>
+    <div class="field">
+      <label for="pickup_phone">Phone</label>
+      <input type="tel" id="pickup_phone" name="phone" placeholder="Optional" />
+    </div>
+    <div class="field" style="flex:1;min-width:180px;">
+      <label for="pickup_notes">Notes</label>
+      <input type="text" id="pickup_notes" name="notes" placeholder="e.g. Has photo ID on file" />
+    </div>
+    <button type="submit" class="btn btn-accent btn-sm">+ Add</button>
+  </form>
+  {% elif session.role == 'Parent' %}
+  <p class="field-hint">Only {{ child.first_name }}'s own parent can update this list.</p>
+  {% endif %}
+</div>
+
+{% if session.role in ('Teacher', 'Admin') %}
+<div class="modal-backdrop" id="healthModal">
+  <div class="modal">
+    <h3 style="margin-bottom:14px;">Edit health & safety — {{ child.first_name }}</h3>
+    <form method="POST" action="{{ url_for('update_child_health', child_id=child.child_id) }}">
+      <div class="field">
+        <label for="h_allergies">Allergies</label>
+        <input type="text" id="h_allergies" name="allergies" value="{{ child.allergies or '' }}"
+               placeholder="e.g. Peanuts (anaphylaxis — EpiPen in bag)" />
+      </div>
+      <div class="field">
+        <label for="h_conditions">Medical conditions</label>
+        <input type="text" id="h_conditions" name="medical_conditions" value="{{ child.medical_conditions or '' }}"
+               placeholder="e.g. Asthma — reliever inhaler in bag" />
+      </div>
+      <div class="field">
+        <label for="h_medications">Medications</label>
+        <input type="text" id="h_medications" name="medications" value="{{ child.medications or '' }}"
+               placeholder="e.g. Ventolin as needed" />
+      </div>
+      <div class="field">
+        <label for="h_dietary">Dietary requirements</label>
+        <input type="text" id="h_dietary" name="dietary_requirements" value="{{ child.dietary_requirements or '' }}"
+               placeholder="e.g. Dairy-free" />
+      </div>
+      <div class="field">
+        <label for="h_notes">Other medical notes</label>
+        <textarea id="h_notes" name="medical_notes" rows="3"
+                  placeholder="GP contact, care instructions, anything else worth knowing">{{ child.medical_notes or '' }}</textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('healthModal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  document.getElementById('healthModal').addEventListener('click', function (e) {
+    if (e.target === this) this.style.display = 'none';
+  });
+</script>
+{% endif %}
+
+<div class="card" id="immunizations">
+  <div class="page-head" style="margin-bottom:6px;">
+    <h3>Immunisation records</h3>
+  </div>
+  <p class="page-sub" style="font-size:0.86rem;margin-bottom:16px;">
+    Based on the NZ National Immunisation Schedule.
+    {% if session.role in ('Teacher', 'Admin') %}Add a record below.{% endif %}
+  </p>
+
+  {% if session.role in ('Teacher', 'Admin') %}
+  <form method="POST" action="{{ url_for('create_immunization', child_id=child.child_id) }}" class="routine-form">
+    <div class="form-row">
+      <div class="field">
+        <label for="imm_vaccine">Vaccine</label>
+        <select id="imm_vaccine" name="vaccine_name" required onchange="document.getElementById('immOtherField').style.display = this.value === 'Other' ? '' : 'none'">
+          {% for v in vaccine_catalog %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field" id="immOtherField" style="display:none;">
+        <label for="imm_vaccine_other">Vaccine name (if "Other")</label>
+        <input type="text" id="imm_vaccine_other" name="vaccine_name_other" placeholder="e.g. Travel vaccine" />
+      </div>
+      <div class="field">
+        <label for="imm_dose">Dose / schedule point</label>
+        <select id="imm_dose" name="dose_label">
+          {% for d in dose_labels %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="imm_status">Status</label>
+        <select id="imm_status" name="status">
+          {% for s in immunization_statuses %}<option value="{{ s }}">{{ s|capitalize }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="imm_date">Date given (if completed)</label>
+        <input type="date" id="imm_date" name="date_given" max="{{ today_date.isoformat() }}" />
+      </div>
+      <div class="field">
+        <label for="imm_notes">Notes (optional)</label>
+        <input type="text" id="imm_notes" name="notes" placeholder="e.g. mild fever after, resolved same day" />
+      </div>
+    </div>
+    <button type="submit" class="btn btn-accent">Add record</button>
+  </form>
+  {% endif %}
+
+  {% if immunizations %}
+  <table class="simple-table routine-table">
+    <thead>
+      <tr><th>Vaccine</th><th>Dose</th><th>Date given</th><th>Status</th><th>Notes</th>
+        {% if session.role in ('Teacher', 'Admin') %}<th></th>{% endif %}</tr>
+    </thead>
+    <tbody>
+      {% for i in immunizations %}
+      <tr>
+        <td>{{ i.vaccine_name }}</td>
+        <td>{{ i.dose_label or '—' }}</td>
+        <td>{{ i.date_given.strftime('%d %b %Y') if i.date_given else '—' }}</td>
+        <td><span class="imm-status imm-status-{{ i.status }}">{{ i.status }}</span></td>
+        <td>{{ i.notes or '—' }}</td>
+        {% if session.role in ('Teacher', 'Admin') %}
+        <td>
+          <form method="POST"
+                action="{{ url_for('delete_immunization', child_id=child.child_id, immunization_id=i.immunization_id) }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">No immunisation records yet.</div>
+  {% endif %}
+</div>
+
+<div class="card" id="routines">
+  <div class="page-head" style="margin-bottom:6px;">
+    <h3>Daily routines</h3>
+    {% if routine_day_count > 5 %}
+    <div class="tb-drop" id="routineDaysDrop">
+      <button type="button" class="tb-drop-btn" onclick="toggleDrop('routineDaysDrop')" title="Days to show">
+        <span class="tb-drop-value">{{ routine_days }} days</span>
+        <span class="tb-drop-arrow">▾</span>
+      </button>
+      <div class="tb-drop-menu">
+        {% for opt in routine_day_options %}
+        <a href="{{ url_for('child_profile', child_id=child.child_id, routine_days=opt) }}#routines"
+           class="{{ 'tb-drop-item-active' if opt == routine_days }}">{{ opt }} days</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <p class="page-sub" style="font-size:0.86rem;margin-bottom:16px;">
+    Meals and toileting recorded through the day.
+    {% if session.role == 'Teacher' %}Add a record below.{% endif %}
+    {% if routine_day_count > 5 %}Showing {{ routine_days }} days — scroll to see more.{% endif %}
+  </p>
+
+  {% if routines %}
+  <img src="{{ url_for('routine_trend_chart', child_id=child.child_id) }}"
+       alt="{{ child.first_name }}'s weekly routine trend" class="analytics-chart" style="margin-bottom:20px;"
+       onerror="this.style.display='none';" />
+  {% endif %}
+
+  {% if session.role == 'Teacher' %}
+  <form method="POST" action="{{ url_for('create_routine', child_id=child.child_id) }}"
+        class="routine-form">
+    <div class="form-row">
+      <div class="field">
+        <label for="routine_category">Type of record</label>
+        <select id="routine_category" name="category" required onchange="switchRoutineType(this.value)">
+          <option value="meal">Meal</option>
+          <option value="toileting">Toileting</option>
+        </select>
+      </div>
+
+      <div class="field" id="mealFields">
+        <label for="meal_type">Meal</label>
+        <select id="meal_type" name="routine_type">
+          {% for t in meal_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field" id="mealOutcomeField">
+        <label for="meal_outcome">How much was eaten</label>
+        <select id="meal_outcome" name="outcome">
+          {% for o in meal_outcomes %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <div class="field" id="toiletFields" style="display:none;">
+        <label for="toilet_type">Toileting</label>
+        <select id="toilet_type" name="routine_type" disabled onchange="switchToiletOutcome(this.value)">
+          {% for t in toileting_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field" id="toiletOutcomeField" style="display:none;">
+        <label for="toilet_outcome">Result</label>
+        <select id="toilet_outcome" name="outcome" disabled>
+          {% for o in nappy_outcomes %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="routine_date">Date</label>
+        <input type="date" id="routine_date" name="date" value="{{ today_iso }}" />
+      </div>
+      <div class="field">
+        <label for="routine_time">Time</label>
+        <input type="time" id="routine_time" name="time" />
+      </div>
+      <div class="field">
+        <label for="routine_notes">Notes (optional)</label>
+        <input type="text" id="routine_notes" name="notes" placeholder="e.g. asked for seconds" />
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-accent">Add record</button>
+  </form>
+
+  <script>
+    /* Only the fields for the chosen category are submitted; the others are
+       disabled so two inputs never share the same name. */
+    function switchRoutineType(category) {
+      const isMeal = category === 'meal';
+      document.getElementById('mealFields').style.display = isMeal ? '' : 'none';
+      document.getElementById('mealOutcomeField').style.display = isMeal ? '' : 'none';
+      document.getElementById('toiletFields').style.display = isMeal ? 'none' : '';
+      document.getElementById('toiletOutcomeField').style.display = isMeal ? 'none' : '';
+      document.getElementById('meal_type').disabled = !isMeal;
+      document.getElementById('meal_outcome').disabled = !isMeal;
+      document.getElementById('toilet_type').disabled = isMeal;
+      document.getElementById('toilet_outcome').disabled = isMeal;
+    }
+
+    const NAPPY_OUTCOMES = {{ nappy_outcomes|tojson }};
+    const TOILET_OUTCOMES = {{ toilet_outcomes|tojson }};
+
+    function switchToiletOutcome(type) {
+      const select = document.getElementById('toilet_outcome');
+      const options = type === 'Toilet' ? TOILET_OUTCOMES : NAPPY_OUTCOMES;
+      select.innerHTML = '';
+      options.forEach(function (o) {
+        const opt = document.createElement('option');
+        opt.value = o; opt.textContent = o;
+        select.appendChild(opt);
+      });
+    }
+  </script>
+  {% endif %}
+
+  {% if routines %}
+    {% set grouped = {} %}
+    {% for r in routines %}
+      {% set _ = grouped.setdefault(r.date, []).append(r) %}
+    {% endfor %}
+
+    <div class="{{ 'routine-scroll' if routine_day_count > 5 }}">
+    {% for day, records in grouped.items() %}
+    <div class="routine-day">
+      <div class="routine-day-head">{{ day.strftime('%A, %d %B %Y') }}</div>
+      <table class="simple-table routine-table">
+        <thead>
+          <tr><th>Time</th><th>Record</th><th>Result</th><th>Notes</th>
+            {% if session.role == 'Teacher' %}<th></th>{% endif %}</tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td>{{ r.recorded_at.strftime('%I:%M %p') }}</td>
+            <td>
+              <span class="routine-pill routine-{{ r.category }}">{{ r.routine_type }}</span>
+            </td>
+            <td>{{ r.outcome or '—' }}</td>
+            <td>{{ r.notes or '—' }}</td>
+            {% if session.role == 'Teacher' %}
+            <td>
+              <form method="POST"
+                    action="{{ url_for('delete_routine', child_id=child.child_id, routine_id=r.routine_id) }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">No routine records yet.</div>
+  {% endif %}
+</div>
+
+{% if routine_day_count > 5 %}
+<script>
+  function toggleDrop(id) {
+    const drop = document.getElementById(id);
+    const wasOpen = drop.classList.contains('open');
+    document.querySelectorAll('.tb-drop').forEach(function (d) { d.classList.remove('open'); });
+    if (!wasOpen) drop.classList.add('open');
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.tb-drop')) {
+      document.querySelectorAll('.tb-drop').forEach(function (d) { d.classList.remove('open'); });
+    }
+  });
+</script>
+{% endif %}
 
 <div class="card">
   <div class="page-head" style="margin-bottom:14px;">

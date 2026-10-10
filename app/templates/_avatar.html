@@ -1,0 +1,11 @@
+{# Photo if one is uploaded, otherwise the initials circle. Centralised so the
+   fallback behaves identically everywhere. #}
+{% macro avatar(avatar_url, initials, css_class='avatar') %}
+  {%- if avatar_url -%}
+    <span class="{{ css_class }} avatar-photo">
+      <img src="{{ url_for('static', filename='uploads/' ~ avatar_url) }}" alt="" />
+    </span>
+  {%- else -%}
+    <span class="{{ css_class }}">{{ initials }}</span>
+  {%- endif -%}
+{% endmacro %}

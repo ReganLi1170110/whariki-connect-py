@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Library — Whāriki Connect{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>ECE document library</h1>
+    <p class="page-sub">
+      Curriculum, licensing criteria, legislation and practice guidance — all in one place,
+      so you can find what you need during an ERO visit without hunting through folders.
+    </p>
+  </div>
+  {% if session.role == 'Admin' %}
+  <a href="{{ url_for('new_library_document') }}" class="btn btn-accent">
+    <svg class="btn-icon" viewBox="0 0 20 20" fill="none"><path d="M11.5 3H5.5A1.5 1.5 0 0 0 4 4.5v11A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V7.5L11.5 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 9v5M7.5 11.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    Add document
+  </a>
+  {% endif %}
+</div>
+
+<form method="GET" action="{{ url_for('library') }}" class="library-search">
+  <input type="text" name="q" value="{{ query or '' }}" placeholder="Search documents by name or topic…" autocomplete="off" />
+  {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}" />{% endif %}
+  <button type="submit" class="btn">Search</button>
+  {% if query %}<a href="{{ url_for('library', category=active_category) }}" class="btn btn-secondary">Clear</a>{% endif %}
+</form>
+
+<div class="filter-bar">
+  <a href="{{ url_for('library', q=query) }}" class="filter-chip {{ 'active' if not active_category }}">All documents</a>
+  {% for c in categories %}
+  <a href="{{ url_for('library', category=c, q=query) }}"
+     class="filter-chip {{ 'active' if active_category == c }}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+{% if documents %}
+<p class="library-count">Showing {{ documents|length }} of {{ total }} documents</p>
+<div class="library-grid">
+  {% for d in documents %}
+  <a href="{{ url_for('library_document', slug=d.slug) }}" class="library-card">
+    <div class="library-cover">
+      {% if d.is_uploaded %}
+        <div class="library-cover-fallback">📄</div>
+      {% else %}
+        <img src="{{ url_for('static', filename='library/covers/' ~ d.slug ~ '.jpg') }}"
+             alt="Cover of {{ d.title }}" loading="lazy" />
+      {% endif %}
+    </div>
+    <div class="library-card-body">
+      <span class="library-cat">{{ d.category }}</span>
+      <div class="library-title">{{ d.title }}</div>
+      <div class="library-desc">{{ d.description }}</div>
+      <div class="library-meta">PDF · {{ d.size_mb }} MB</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    No documents match “{{ query }}”.
+    <br /><a href="{{ url_for('library') }}" style="color:var(--color-primary);font-weight:600;">Show all documents</a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

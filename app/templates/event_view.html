@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('events') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to events</a>
+
+<div class="card" style="max-width:720px;">
+  <div class="page-head" style="margin-bottom:6px;">
+    <span class="tag event-tag-{{ event.event_type }}">{{ event_type_labels[event.event_type] }}</span>
+    {% if can_delete %}
+    <form method="POST" action="{{ url_for('delete_event', event_id=event.event_id) }}"
+          onsubmit="return confirm('Remove this event from the calendar?');">
+      <button type="submit" class="btn btn-secondary btn-sm">Remove event</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <h1 style="margin-bottom:6px;">{{ event.title }}</h1>
+  <p class="page-sub" style="margin-bottom:20px;">
+    {{ event.classroom }} · Added by {{ event.created_by_name }} · {{ event.created_at.strftime('%d %b %Y') }}
+  </p>
+
+  <div class="event-when">
+    📅 {{ event.event_date.strftime('%A, %d %B %Y') }}
+    {% if event.end_date %} – {{ event.end_date.strftime('%A, %d %B %Y') }}{% endif %}
+  </div>
+
+  {% if event.description %}
+  <div class="community-body" style="margin-top:18px;">{{ event.description }}</div>
+  {% endif %}
+</div>
+
+{% endblock %}

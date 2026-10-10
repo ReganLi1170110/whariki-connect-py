@@ -13,8 +13,92 @@
   {% else %}
     <div class="stat-card"><div class="num">{{ children|length }}</div><div class="label">Children enrolled</div></div>
   {% endif %}
+
   <div class="stat-card"><div class="num">{{ unread_count }}</div><div class="label">Unread notifications</div></div>
+
+  {% if session.role in ('Parent', 'Teacher') %}
+  <div class="stat-card {{ 'stat-card-alert' if pending_accidents }}">
+    <div class="num">{{ pending_accidents|length }}</div>
+    <div class="label">Accident form{{ 's' if pending_accidents|length != 1 }} awaiting your ack.</div>
+  </div>
+  {% endif %}
+
+  {% if session.role == 'Teacher' %}
+  <div class="stat-card"><div class="num">{{ stories_this_week }}</div><div class="label">Learning stories written this week</div></div>
+  <div class="stat-card {{ 'stat-card-alert' if timesheet_missing_days }}">
+    <div class="num">{{ timesheet_missing_days }}</div>
+    <div class="label">Timesheet day{{ 's' if timesheet_missing_days != 1 }} still to fill in this week</div>
+  </div>
+  {% endif %}
 </div>
+
+{% if session.role in ('Parent', 'Teacher') %}
+<div class="overview-row">
+  <div class="card">
+    <h3 style="margin-bottom:10px;">Today's attendance</h3>
+    {% if children %}
+      {% for c in children %}
+      {% set row = today_attendance.get(c.child_id) %}
+      <div class="overview-mini-row">
+        <span class="avatar-xs">{{ (c.first_name[0] ~ c.last_name[0])|upper }}</span>
+        <span class="overview-mini-name">{{ c.first_name }} {{ c.last_name }}</span>
+        {% if row and row.check_in_time and not row.check_out_time %}
+          <span class="status-pill status-present">checked in</span>
+        {% elif row and row.check_out_time %}
+          <span class="status-pill status-present">checked out</span>
+        {% elif row %}
+          <span class="status-pill {{ 'status-present' if row.status == 'present' else 'status-absent' }}">{{ row.status }}</span>
+        {% else %}
+          <span class="status-pill status-pending">not recorded</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <div style="margin-top:12px;"><a href="{{ url_for('attendance') }}" class="btn btn-secondary btn-sm">Go to Attendance</a></div>
+    {% else %}
+      <div class="empty-state">No children to show.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:10px;">Coming up</h3>
+    {% if upcoming_events %}
+      {% for e in upcoming_events %}
+      <a href="{{ url_for('view_event', event_id=e.event_id) }}" class="overview-event-row" style="text-decoration:none;color:inherit;">
+        <div class="overview-event-date">
+          <div class="d">{{ e.event_date.strftime('%d') }}</div>
+          <div class="m">{{ e.event_date.strftime('%b') }}</div>
+        </div>
+        <div class="overview-event-body">
+          <div class="overview-event-title">{{ e.title }}</div>
+          <div class="overview-event-meta">{{ event_type_labels[e.event_type] }} · {{ e.classroom }}</div>
+        </div>
+      </a>
+      {% endfor %}
+      <div style="margin-top:12px;"><a href="{{ url_for('events') }}" class="btn btn-secondary btn-sm">Go to Events</a></div>
+    {% else %}
+      <div class="empty-state">No upcoming events.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if session.role == 'Parent' %}
+<div class="card">
+  <h3 style="margin-bottom:14px;">Latest learning story</h3>
+  {% if latest_story %}
+  <a href="{{ url_for('view_learning_story', story_id=latest_story.story_id) }}" class="overview-story-card" style="text-decoration:none;color:inherit;">
+    <div class="child-card-thumb">{{ (latest_story.first_name[0] ~ latest_story.last_name[0])|upper }}</div>
+    <div>
+      <div class="community-title" style="margin-bottom:2px;">{{ latest_story.title }}</div>
+      <div class="child-meta" style="margin-bottom:6px;">{{ latest_story.first_name }} {{ latest_story.last_name }} · By {{ latest_story.teacher_name }} · {{ latest_story.created_at.strftime('%d %b %Y') }}</div>
+      <div class="community-excerpt">{{ latest_story.content[:160] }}{% if latest_story.content|length > 160 %}…{% endif %}</div>
+    </div>
+  </a>
+  {% else %}
+    <div class="empty-state">No learning stories yet.</div>
+  {% endif %}
+</div>
+{% endif %}
 
 <div class="card">
   <h3 style="margin-bottom:14px;">Recent notifications</h3>
@@ -34,5 +118,15 @@
     <div class="empty-state">No notifications yet.</div>
   {% endif %}
 </div>
+
+<a href="{{ url_for('library') }}" class="library-fab" title="Open the ECE document library">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H9a2 2 0 0 1 2 2v12a1.5 1.5 0 0 0-1.5-1.5h-4A1.5 1.5 0 0 1 4 15V5.5Z"
+          stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+    <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H15a2 2 0 0 0-2 2v12a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 0 20 15V5.5Z"
+          stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+  </svg>
+  <span>Library</span>
+</a>
 
 {% endblock %}

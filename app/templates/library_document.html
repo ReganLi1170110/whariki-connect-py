@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ document.title }} — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('library') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to library</a>
+
+<div class="doc-head">
+  <div>
+    <span class="library-cat">{{ document.category }}</span>
+    <h1>{{ document.title }}</h1>
+    <p class="page-sub">{{ document.description }}</p>
+  </div>
+  <div class="doc-actions">
+    <a href="{{ url_for('library_file', slug=document.slug) }}" target="_blank"
+       class="btn btn-secondary btn-sm">Open in new tab</a>
+    <a href="{{ url_for('library_file', slug=document.slug) }}" download
+       class="btn btn-secondary btn-sm">Download</a>
+    {% if session.role == 'Admin' and document.is_uploaded %}
+    <form method="POST" action="{{ url_for('delete_library_document', slug=document.slug) }}"
+          onsubmit="return confirm('Remove &quot;{{ document.title }}&quot; from the library?');">
+      <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card doc-tip">
+  <strong>Tip:</strong> click inside the document, then press
+  <kbd>Ctrl</kbd>+<kbd>F</kbd> (or <kbd>⌘</kbd>+<kbd>F</kbd> on Mac) to search the full text
+  of this PDF. Use the viewer's own toolbar to jump between pages.
+</div>
+
+<div class="pdf-frame">
+  <iframe src="{{ url_for('library_file', slug=document.slug) }}#view=FitH"
+          title="{{ document.title }}"></iframe>
+</div>
+
+{% endblock %}

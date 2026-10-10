@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>About Whāriki Connect</title>
+<link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}" />
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body class="about-body">
+
+<header class="about-nav">
+  <a href="{{ url_for('login') }}" class="about-nav-brand">
+    <img src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" />
+    <span>Whāriki Connect</span>
+  </a>
+  <nav class="about-nav-links">
+    <a href="#what">What it does</a>
+    <a href="#parents">For whānau</a>
+    <a href="#teachers">For kaiako</a>
+    <a href="#admins">For administrators</a>
+    <a href="{{ url_for('login') }}" class="btn btn-sm">Sign in</a>
+  </nav>
+</header>
+
+<section class="about-hero weave-pattern">
+  <div class="about-container">
+    <div class="eyebrow">About Whāriki Connect</div>
+    <h1>One platform for the work that happens around every child.</h1>
+    <p class="about-hero-lead">
+      Whāriki Connect is a web platform for New Zealand early childhood education services.
+      It brings attendance, learning story documentation, parent&ndash;teacher communication and
+      accident reporting together in one place, so the information teachers already record
+      becomes something everyone can actually use.
+    </p>
+  </div>
+</section>
+
+<main class="about-container about-main">
+
+  <section id="what" class="about-section">
+    <h2>Why we built it</h2>
+    <p>
+      Licensed ECE services in Aotearoa follow <em>Te Whāriki</em>, the national early childhood
+      curriculum, and keep daily records covering attendance, learning documentation, and health
+      and safety. A range of digital platforms already support parts of this work, but none of
+      them cover the whole of a teacher's day. In practice, kaiako end up moving between separate
+      systems — and sometimes paper — to complete routine administration, with limited support for
+      making sense of the information once it has been entered.
+    </p>
+    <p>
+      Whāriki Connect takes a different starting point: rather than one tool per task, it treats
+      attendance, documentation, communication and incident reporting as parts of the same
+      relationship with the same child. The name comes from <em>Te Whāriki</em> itself, where
+      <em>whāriki</em> means "woven mat" — different strands brought together into one whole.
+    </p>
+
+    <div class="about-grid">
+      <div class="about-card">
+        <div class="about-card-icon">📖</div>
+        <h3>Learning stories</h3>
+        <p>
+          Write observations, attach a photo, and tag them against all five Te Whāriki strands and
+          all twenty learning outcomes. Save a draft while you finish it, then publish when it's
+          ready for whānau to read.
+        </p>
+      </div>
+      <div class="about-card">
+        <div class="about-card-icon">🗓️</div>
+        <h3>Attendance</h3>
+        <p>
+          Whānau check their child in at drop-off and out at pick-up. Teachers get a month calendar
+          and can record or correct any day, including back-dated absences and sick days.
+        </p>
+      </div>
+      <div class="about-card">
+        <div class="about-card-icon">🩹</div>
+        <h3>Accident &amp; incident forms</h3>
+        <p>
+          A digital version of the accident report teachers already use, covering the incident,
+          first aid given, and how and when whānau were contacted. Parents review and acknowledge
+          it in the app.
+        </p>
+      </div>
+      <div class="about-card">
+        <div class="about-card-icon">💬</div>
+        <h3>Messages</h3>
+        <p>
+          Direct messages between kaiako and whānau, kept alongside the child they're about,
+          instead of scattered across email and social media groups.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="parents" class="about-section">
+    <h2>If you're a parent or caregiver</h2>
+    <p>Once your centre's administrator has approved your account, here's how to get started.</p>
+    <ol class="about-steps">
+      <li>
+        <strong>Create an account.</strong> Choose <em>Sign up</em>, select <em>Parent</em>, pick your
+        centre from the list, and submit. Your request goes to the centre administrator, who links
+        your account to your child before approving it.
+      </li>
+      <li>
+        <strong>Check your child in and out.</strong> Open <em>Attendance</em> when you arrive and tap
+        <em>Check in</em>; tap <em>Check out</em> when you collect them. Open the calendar on any child
+        to see their attendance history.
+      </li>
+      <li>
+        <strong>Read learning stories.</strong> <em>Learning stories</em> shows every published story
+        written about your tamariki, with the strands and learning outcomes each one relates to.
+        Filter by child if you have more than one enrolled.
+      </li>
+      <li>
+        <strong>Review accident forms.</strong> If an incident is recorded, you'll see it under
+        <em>Accident forms</em> and get a notification. Open the report and tap
+        <em>Acknowledge this form</em> so your centre knows you've seen it.
+      </li>
+      <li>
+        <strong>Message your child's kaiako.</strong> Use <em>Messages</em> to reach the teachers in your
+        child's room. A red dot next to a name means there's something new for you to read.
+      </li>
+    </ol>
+  </section>
+
+  <section id="teachers" class="about-section">
+    <h2>If you're a teacher</h2>
+    <p>Kaiako accounts can document learning, manage attendance and record incidents.</p>
+    <ol class="about-steps">
+      <li>
+        <strong>Create an account.</strong> Choose <em>Sign up</em>, select <em>Teacher</em>, then pick
+        your centre and the room you work in. Your centre administrator approves the request.
+      </li>
+      <li>
+        <strong>Write a learning story.</strong> Go to <em>Learning stories</em> → <em>New learning
+        story</em>. Choose the child, write your observation, add a photo if you have one, and tick the
+        strands and learning outcomes it relates to. <em>Save draft</em> keeps it private to you;
+        <em>Publish story</em> makes it visible to that child's whānau and notifies them.
+      </li>
+      <li>
+        <strong>Manage attendance.</strong> <em>Attendance</em> shows today's status for every child in
+        your room. Open a child's <em>Calendar</em> and click any day to set it to present, absent, sick
+        or on leave, and to adjust check-in and check-out times — including for days that have passed.
+      </li>
+      <li>
+        <strong>Record an accident.</strong> <em>Accident forms</em> → <em>Record accident</em> opens a
+        digital version of the paper report: date and time, location, nature of injury, what happened,
+        first aid provided, and the parent-contact details. <em>Save draft</em> to finish later, or
+        <em>Submit form</em> to send it to the child's whānau for acknowledgement.
+      </li>
+      <li>
+        <strong>Keep in touch.</strong> <em>Messages</em> lists the parents of children in your room, so
+        you can follow up on anything from the day.
+      </li>
+    </ol>
+  </section>
+
+  <section id="admins" class="about-section">
+    <h2>If you're a centre administrator</h2>
+    <ol class="about-steps">
+      <li>
+        <strong>Approve new accounts.</strong> When someone signs up, you'll see a badge on
+        <em>Pending requests</em>. Review each one and approve or decline it. When approving a parent,
+        tick which child or children to link them to — this is what gives them access to the right
+        learning stories, attendance and accident forms.
+      </li>
+      <li>
+        <strong>Watch the centre dashboard.</strong> The <em>Admin panel</em> shows enrolments, staff and
+        whānau numbers, attendance for the day, learning stories posted, and any accident forms still
+        waiting on parent acknowledgement.
+      </li>
+      <li>
+        <strong>Keep the directory current.</strong> The staff and families table shows every account and
+        whether it is approved, pending or declined.
+      </li>
+    </ol>
+  </section>
+
+  <section class="about-section about-cta">
+    <h2>Ready to get started?</h2>
+    <p>Sign in if your account is already approved, or create one and we'll let your centre know.</p>
+    <div class="about-cta-buttons">
+      <a href="{{ url_for('login') }}" class="btn">Sign in</a>
+      <a href="{{ url_for('signup') }}" class="btn btn-secondary">Create an account</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="about-footer">
+  <div class="about-container">
+    Whāriki Connect · Built for New Zealand early childhood education ·
+    <a href="{{ url_for('login') }}">Sign in</a>
+  </div>
+</footer>
+
+</body>
+</html>

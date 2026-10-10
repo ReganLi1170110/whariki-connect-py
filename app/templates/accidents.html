@@ -12,7 +12,10 @@
     </p>
   </div>
   {% if session.role == 'Teacher' %}
-  <a href="{{ url_for('new_accident') }}" class="btn btn-alert">+ Record accident</a>
+  <a href="{{ url_for('new_accident') }}" class="btn btn-alert">
+    <svg class="btn-icon" viewBox="0 0 20 20" fill="none"><path d="M10 3.2 18 16.8H2L10 3.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="10" cy="14" r="0.9" fill="currentColor"/></svg>
+    Record accident
+  </a>
   {% endif %}
 </div>
 

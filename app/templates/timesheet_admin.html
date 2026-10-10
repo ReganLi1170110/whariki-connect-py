@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Timesheets — Whāriki Connect{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>Teacher timesheets</h1>
+    <p class="page-sub">View and correct any teacher's hours, and approve a week once it's been used for payroll.</p>
+  </div>
+  <form method="GET" action="{{ url_for('admin_timesheet') }}" class="week-jump">
+    <input type="hidden" name="teacher_id" value="{{ active_teacher_id }}" />
+    <label for="jump_date">Jump to date</label>
+    <input type="date" id="jump_date" name="week_start" value="{{ week_start.isoformat() }}"
+           onchange="this.form.submit()" />
+  </form>
+</div>
+
+<form method="GET" action="{{ url_for('admin_timesheet') }}" class="chart-filter-form">
+  <input type="hidden" name="week_start" value="{{ week_start.isoformat() }}" />
+  <div class="field">
+    <label for="teacher_id">Teacher</label>
+    <select id="teacher_id" name="teacher_id" onchange="this.form.submit()">
+      {% for t in teachers %}
+      <option value="{{ t.user_id }}" {{ 'selected' if active_teacher_id == t.user_id }}>
+        {{ t.full_name }} ({{ t.classroom }})
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if not teachers %}
+<div class="card"><div class="empty-state">No teacher accounts yet.</div></div>
+{% else %}
+
+<div class="week-nav">
+  <a href="{{ url_for('admin_timesheet', teacher_id=active_teacher_id, week_start=prev_week.isoformat()) }}" class="btn btn-secondary btn-sm">← Previous week</a>
+  <div class="week-nav-label">{{ week_start.strftime('%d %b') }} – {{ week_end.strftime('%d %b %Y') }}</div>
+  <a href="{{ url_for('admin_timesheet', teacher_id=active_teacher_id, week_start=next_week.isoformat()) }}" class="btn btn-secondary btn-sm">Next week →</a>
+</div>
+
+<form method="POST" action="{{ url_for('admin_save_timesheet') }}">
+  <input type="hidden" name="teacher_id" value="{{ active_teacher_id }}" />
+  <input type="hidden" name="week_start" value="{{ week_start.isoformat() }}" />
+
+  <div class="card" style="padding:0;overflow-x:auto;">
+    <table class="simple-table timesheet-table">
+      <thead>
+        <tr>
+          <th>Day</th><th>Start</th><th>End</th><th>Break (min)</th><th>Notes</th><th>Hours</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        {% set entry = row.entry %}
+        <tr>
+          <td>
+            <strong>{{ day_names[loop.index0] }}</strong><br />
+            <span class="page-sub" style="font-size:0.78rem;">{{ row.date.strftime('%d %b') }}</span>
+          </td>
+          <td><input type="time" name="day_{{ loop.index0 }}_start" value="{{ entry.start_time.strftime('%H:%M') if entry else '' }}" /></td>
+          <td><input type="time" name="day_{{ loop.index0 }}_end" value="{{ entry.end_time.strftime('%H:%M') if entry else '' }}" /></td>
+          <td><input type="number" min="0" step="5" name="day_{{ loop.index0 }}_break" value="{{ entry.break_minutes if entry else 0 }}" style="width:70px;" /></td>
+          <td><input type="text" name="day_{{ loop.index0 }}_notes" value="{{ entry.notes or '' }}" placeholder="Optional" /></td>
+          <td>{{ '%.2f'|format(entry|hours_worked) if entry else '—' }}</td>
+          <td>
+            {% if entry and entry.status == 'approved' %}
+              <span class="status-pill status-present">Approved</span>
+            {% elif entry %}
+              <span class="status-pill status-pending">Submitted</span>
+            {% else %}
+              <span class="page-sub" style="font-size:0.78rem;">No entry</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="timesheet-footer">
+    <div class="timesheet-total">Week total: <strong>{{ '%.2f'|format(week_total) }} hours</strong></div>
+    <div style="display:flex;gap:10px;">
+      <button type="submit" class="btn btn-accent">Save changes</button>
+    </div>
+  </div>
+</form>
+
+<div style="display:flex;gap:10px;margin:-10px 0 24px;">
+  <form method="POST" action="{{ url_for('approve_timesheet_week') }}">
+    <input type="hidden" name="teacher_id" value="{{ active_teacher_id }}" />
+    <input type="hidden" name="week_start" value="{{ week_start.isoformat() }}" />
+    <button type="submit" class="btn btn-secondary btn-sm">🔒 Approve this week (locks it for payroll)</button>
+  </form>
+  <form method="POST" action="{{ url_for('unapprove_timesheet_week') }}">
+    <input type="hidden" name="teacher_id" value="{{ active_teacher_id }}" />
+    <input type="hidden" name="week_start" value="{{ week_start.isoformat() }}" />
+    <button type="submit" class="btn btn-secondary btn-sm">🔓 Reopen this week</button>
+  </form>
+</div>
+
+<h3 style="margin-bottom:10px;">This month's totals — all teachers</h3>
+{% if month_totals %}
+<div class="card" style="padding:0;overflow-x:auto;">
+  <table class="simple-table">
+    <thead><tr><th>Teacher</th><th>Days recorded</th><th>Total hours</th></tr></thead>
+    <tbody>
+      {% for t in month_totals %}
+      <tr><td>{{ t.teacher_name }}</td><td>{{ t.days }}</td><td>{{ '%.2f'|format(t.hours) }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><div class="empty-state">No timesheet entries recorded yet this month.</div></div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

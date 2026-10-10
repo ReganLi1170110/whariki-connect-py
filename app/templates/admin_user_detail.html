@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% from "_avatar.html" import avatar %}
+{% block title %}{{ target.full_name }} — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to admin panel</a>
+
+<div class="card" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+  {{ avatar(target.avatar_url, (target.full_name or '?')[0]|upper, 'avatar avatar-lg') }}
+  <div>
+    <h1 style="margin-bottom:4px;">{{ target.full_name }}</h1>
+    <p class="page-sub" style="margin-bottom:6px;">
+      {{ target.role }}{% if target.classroom %} · {{ target.classroom }}{% endif %} · {{ target.email }}
+    </p>
+    <span class="status-pill {{ 'status-present' if target.status == 'approved' else 'status-absent' if target.status in ('suspended', 'rejected') else 'status-pending' }}">
+      {{ target.status }}
+    </span>
+  </div>
+</div>
+
+{% if dev_reset_url %}
+<div class="card" style="background:var(--color-accent-soft);">
+  <strong>Email isn't configured on this server</strong>, so here is the reset link directly —
+  copy it and pass it on to {{ target.full_name }} yourself. This only ever shows when no SMTP is set up.
+  <br /><br />
+  <a href="{{ dev_reset_url }}" style="word-break:break-all;">{{ dev_reset_url }}</a>
+</div>
+{% endif %}
+
+{% if is_self %}
+<div class="card"><p class="page-sub" style="margin:0;">This is your own account — deactivation isn't available here to avoid locking yourself out.</p></div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-bottom:12px;">Account status</h3>
+
+  {% if target.status == 'approved' %}
+  <p class="page-sub" style="margin-bottom:12px;">
+    Deactivating keeps all of {{ target.full_name }}'s history (learning stories, messages, records)
+    but blocks them from signing in.
+  </p>
+  {% if not is_self %}
+  <form method="POST" action="{{ url_for('admin_suspend_user', user_id=target.user_id) }}"
+        onsubmit="return confirm('Deactivate {{ target.full_name }}\'s account?');">
+    <button type="submit" class="btn btn-secondary btn-sm">🚫 Deactivate account</button>
+  </form>
+  {% endif %}
+
+  {% elif target.status == 'suspended' %}
+  <p class="page-sub" style="margin-bottom:12px;">This account is deactivated and can't sign in.</p>
+  <form method="POST" action="{{ url_for('admin_reactivate_user', user_id=target.user_id) }}">
+    <button type="submit" class="btn btn-accent btn-sm">✓ Reactivate account</button>
+  </form>
+
+  {% elif target.status == 'pending' %}
+  <p class="page-sub" style="margin:0;">
+    This is a new sign-up request, not yet approved —
+    <a href="{{ url_for('admin_pending_signups') }}" style="color:var(--color-primary);font-weight:600;">review it here</a>.
+  </p>
+
+  {% else %}
+  <p class="page-sub" style="margin:0;">This sign-up request was declined and can't sign in.</p>
+  {% endif %}
+</div>
+
+{% if target.role == 'Teacher' %}
+<div class="card">
+  <h3 style="margin-bottom:12px;">Classroom</h3>
+  <form method="POST" action="{{ url_for('admin_update_classroom', user_id=target.user_id) }}" class="chart-filter-form">
+    <div class="field">
+      <label for="classroom">Assigned room</label>
+      <select id="classroom" name="classroom">
+        {% for c in classrooms %}
+        <option value="{{ c }}" {{ 'selected' if target.classroom == c }}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+  </form>
+</div>
+{% endif %}
+
+{% if target.status in ('approved', 'suspended') %}
+<div class="card">
+  <h3 style="margin-bottom:4px;">Password reset</h3>
+  <p class="page-sub" style="font-size:0.85rem;margin-bottom:12px;">
+    Sends {{ target.full_name }} a reset link (or shows it to you directly, if no email is configured).
+    Useful if they're locked out and can't reach the email on their account.
+  </p>
+  <form method="POST" action="{{ url_for('admin_trigger_password_reset', user_id=target.user_id) }}">
+    <button type="submit" class="btn btn-secondary btn-sm">✉ Send password reset link</button>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

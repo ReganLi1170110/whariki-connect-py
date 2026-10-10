@@ -1,3 +1,5 @@
+import re
+
 from flask_bcrypt import Bcrypt
 from flask import session, redirect, url_for, flash, request
 from functools import wraps
@@ -6,6 +8,24 @@ from app import flask_app as app
 from app.db import db
 
 flask_bcrypt = Bcrypt(app)
+
+# Minimum length is deliberately "more than 8" (i.e. 9+), not "8 or more" -
+# combined with the uppercase/special-character rules below this is the one
+# password policy used everywhere a password is set (signup, reset).
+PASSWORD_MIN_LENGTH = 9
+PASSWORD_SPECIAL_CHARS = r"!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?"
+_PASSWORD_SPECIAL_RE = re.compile(f"[{PASSWORD_SPECIAL_CHARS}]")
+
+
+def validate_password_strength(password):
+    """Returns an error message if the password is too weak, otherwise None."""
+    if len(password) <= 8:
+        return f"Password must be more than 8 characters (at least {PASSWORD_MIN_LENGTH})."
+    if not re.search(r"[A-Z]", password):
+        return "Password must include at least one uppercase letter."
+    if not _PASSWORD_SPECIAL_RE.search(password):
+        return "Password must include at least one special character (e.g. ! @ # $ % &)."
+    return None
 
 
 def generate_password_hash(password):

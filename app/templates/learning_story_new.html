@@ -5,77 +5,516 @@
 <a href="{{ url_for('learning_stories') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to learning stories</a>
 
 <h1>New learning story</h1>
-<p class="page-sub">Write an observation, tag it against Te Whāriki, and add a photo.</p>
+<p class="page-sub">Write an observation, tag it against Te Whāriki, and add photos.</p>
 
-<form method="POST" action="{{ url_for('create_learning_story') }}" enctype="multipart/form-data">
-  <div class="card">
-    <div class="form-row">
-      <div class="field">
-        <label for="child_id">Child</label>
-        <select id="child_id" name="child_id" required>
-          <option value="">— Select a child —</option>
-          {% for c in children %}
-          <option value="{{ c.child_id }}" {{ 'selected' if preselected_child_id == c.child_id }}>
-            {{ c.first_name }} {{ c.last_name }} ({{ c.classroom }})
-          </option>
+<form method="POST" action="{{ url_for('create_learning_story') }}" id="storyForm">
+  <!-- The editor is a contenteditable div; its HTML is copied into this
+       hidden field on submit, since contenteditable isn't a form control. -->
+  <input type="hidden" name="content" id="contentField" />
+
+  <div class="story-editor-layout" id="editorLayout">
+    <div class="story-editor-main">
+      <div class="card">
+        <div class="form-row">
+          <div class="field">
+            <label for="child_id">Child</label>
+            <select id="child_id" name="child_id" required onchange="updateChildName()">
+              <option value="">— Select a child —</option>
+              {% for c in children %}
+              <option value="{{ c.child_id }}" data-name="{{ c.first_name }}"
+                {{ 'selected' if preselected_child_id == c.child_id }}>
+                {{ c.first_name }} {{ c.last_name }} ({{ c.classroom }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" required placeholder="e.g. Building block towers"
+                   value="{{ title or '' }}" />
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:0;">
+          <label>Observation</label>
+
+          <div class="editor-shell">
+            <div class="editor-toolbar" id="editorToolbar">
+              {# Custom dropdowns rather than native <select>: the current value is
+                 rendered as plain text, so it is always visible and can't be
+                 blanked by the browser resetting selectedIndex. #}
+              <div class="tb-drop" id="fontDrop">
+                <button type="button" class="tb-drop-btn" onclick="toggleDrop('fontDrop')"
+                        title="Font" onmousedown="event.preventDefault()">
+                  <span class="tb-drop-value" id="fontValue">Inter</span>
+                  <span class="tb-drop-arrow">▾</span>
+                </button>
+                <div class="tb-drop-menu">
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFont('Inter')">Inter</button>
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFont('Georgia')">Georgia</button>
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFont('Times New Roman')">Times New Roman</button>
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFont('Arial')">Arial</button>
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFont('Comic Sans MS')">Comic Sans MS</button>
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFont('Courier New')">Courier New</button>
+                </div>
+              </div>
+
+              <div class="tb-drop" id="sizeDrop">
+                <button type="button" class="tb-drop-btn" onclick="toggleDrop('sizeDrop')"
+                        title="Text size" onmousedown="event.preventDefault()">
+                  <span class="tb-drop-value" id="sizeValue">Normal</span>
+                  <span class="tb-drop-arrow">▾</span>
+                </button>
+                <div class="tb-drop-menu">
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFontSize('13px')">Small</button>
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFontSize('16px')">Normal</button>
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFontSize('20px')">Large</button>
+                  <button type="button" onmousedown="event.preventDefault()" onclick="applyFontSize('26px')">Huge</button>
+                </div>
+              </div>
+
+              <span class="tb-divider"></span>
+
+              <button type="button" class="tb-btn" id="tbBold" onmousedown="event.preventDefault()"
+                      onclick="exec('bold')" title="Bold"><strong>B</strong></button>
+              <button type="button" class="tb-btn" id="tbItalic" onmousedown="event.preventDefault()"
+                      onclick="exec('italic')" title="Italic"><em>I</em></button>
+              <button type="button" class="tb-btn" id="tbUnderline" onmousedown="event.preventDefault()"
+                      onclick="exec('underline')" title="Underline"><u>U</u></button>
+              <button type="button" class="tb-btn" id="tbStrike" onmousedown="event.preventDefault()"
+                      onclick="exec('strikeThrough')" title="Strikethrough"><s>S</s></button>
+
+              <span class="tb-divider"></span>
+
+              <label class="tb-color" title="Text colour">
+                <span>A</span>
+                <input type="color" value="#1F3D2E"
+                       oninput="exec('foreColor', this.value)" />
+              </label>
+              <label class="tb-color tb-highlight" title="Highlight">
+                <span>▍</span>
+                <input type="color" value="#FBEED0"
+                       oninput="exec('hiliteColor', this.value)" />
+              </label>
+
+              <span class="tb-divider"></span>
+
+              <button type="button" class="tb-btn" onmousedown="event.preventDefault()"
+                      onclick="exec('insertUnorderedList')" title="Bulleted list">•≡</button>
+              <button type="button" class="tb-btn" onmousedown="event.preventDefault()"
+                      onclick="exec('insertOrderedList')" title="Numbered list">1≡</button>
+              <button type="button" class="tb-btn" onmousedown="event.preventDefault()"
+                      onclick="exec('justifyLeft')" title="Align left">⇤</button>
+              <button type="button" class="tb-btn" onmousedown="event.preventDefault()"
+                      onclick="exec('justifyCenter')" title="Centre">≡</button>
+
+              <span class="tb-divider"></span>
+
+              <button type="button" class="tb-btn tb-btn-wide" onclick="document.getElementById('imagePicker').click()"
+                      title="Insert an image">🖼 Add photo</button>
+              <button type="button" class="tb-btn" onmousedown="event.preventDefault()"
+                      onclick="exec('removeFormat')" title="Clear formatting">⌫</button>
+
+              <input type="file" id="imagePicker" accept="image/png,image/jpeg,image/gif,image/webp"
+                     multiple style="display:none;" onchange="handlePickedFiles(this.files); this.value='';" />
+            </div>
+
+            <div id="observationEditor" class="editor-area" contenteditable="true"
+                 style="font-family: Inter; font-size: 16px;"
+                 data-placeholder="What did the child do, say, or explore today? You can paste photos straight in.">{{ content|safe if content else '' }}</div>
+
+            <div class="editor-foot">
+              <span id="editorStatus">Paste or drag images straight into the observation — you can add as many as you like.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:6px;">Te Whāriki strands</h3>
+        <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">Tick the strands this observation relates to.</p>
+        <div class="checkbox-row">
+          {% for s in strands %}
+          <label class="check-chip">
+            <input type="checkbox" name="strand" value="{{ s }}"
+                   {{ 'checked' if selected_strands and s in selected_strands }} /> {{ s }}
+          </label>
           {% endfor %}
-        </select>
+        </div>
       </div>
-      <div class="field">
-        <label for="image">Photo (optional)</label>
-        <input type="file" id="image" name="image" accept="image/png,image/jpeg,image/gif,image/webp" />
+
+      <div class="card">
+        <h3 style="margin-bottom:6px;">Learning outcomes</h3>
+        <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
+          The 20 Te Whāriki learning outcomes, grouped by strand. Tick any that apply.
+        </p>
+        {% for strand, outcomes in outcomes_by_strand.items() %}
+        <div class="outcome-group">
+          <div class="outcome-group-head">{{ strand }}</div>
+          {% for o in outcomes %}
+          <label class="outcome-check">
+            <input type="checkbox" name="outcome" value="{{ o }}"
+                   {{ 'checked' if selected_outcomes and o in selected_outcomes }} />
+            <span>{{ o }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" name="action" value="draft" class="btn btn-secondary">Save draft</button>
+        <button type="submit" name="action" value="publish" class="btn">Publish story</button>
       </div>
     </div>
 
-    <div class="field">
-      <label for="title">Title</label>
-      <input type="text" id="title" name="title" required placeholder="e.g. Building block towers"
-             value="{{ title or '' }}" />
-    </div>
+    <!-- AI writing assistant -->
+    <aside class="ai-panel" id="aiPanel">
+      <button type="button" class="ai-toggle" onclick="toggleAi()">
+        <span class="ai-toggle-icon">✨</span>
+        <span class="ai-toggle-label">AI writing assistant</span>
+        <span class="ai-toggle-chevron" id="aiChevron">›</span>
+      </button>
 
-    <div class="field" style="margin-bottom:0;">
-      <label for="content">Observation</label>
-      <textarea id="content" name="content" rows="9" required
-                placeholder="What did the child do, say, or explore today?">{{ content or '' }}</textarea>
-    </div>
-  </div>
+      <div class="ai-body" id="aiBody">
+        <p class="ai-intro">
+          Ask for help with this learning story, a learning plan, an activity idea, or any
+          ECE question. It can see your current draft — nothing is published until you choose to.
+          <a href="{{ url_for('ai_status') }}" target="_blank" class="ai-status-link">Check AI setup</a>
+        </p>
+        <p class="ai-privacy">
+          🔒 Only the child’s <strong>first name</strong> and the text you type or draft are sent to the
+          AI service. Don’t add surnames, health details or family information here, and always
+          edit the draft so it sounds like you.
+        </p>
 
-  <div class="card">
-    <h3 style="margin-bottom:6px;">Te Whāriki strands</h3>
-    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">Tick the strands this observation relates to.</p>
-    <div class="checkbox-row">
-      {% for s in strands %}
-      <label class="check-chip">
-        <input type="checkbox" name="strand" value="{{ s }}"
-               {{ 'checked' if selected_strands and s in selected_strands }} /> {{ s }}
-      </label>
-      {% endfor %}
-    </div>
-  </div>
+        <div class="ai-quick">
+          <button type="button" class="ai-chip" onclick="askAi('Turn my rough notes into a warm, specific learning story.')">Draft from my notes</button>
+          <button type="button" class="ai-chip" onclick="askAi('Suggest which Te Whāriki strands and learning outcomes fit this observation, and explain why briefly.')">Suggest strands</button>
+          <button type="button" class="ai-chip" onclick="askAi('Make my draft warmer and more specific, without inventing anything new.')">Improve my draft</button>
+          <button type="button" class="ai-chip" onclick="askAi('What extra detail would make this observation stronger? Ask me a couple of short questions.')">What am I missing?</button>
+          <button type="button" class="ai-chip" onclick="askAi('Suggest a short activity or learning experience I could try next, based on this observation.')">Suggest an activity</button>
+          <button type="button" class="ai-chip" onclick="askAi('Turn this observation into a short individual learning plan with a couple of next steps.')">Draft a learning plan</button>
+        </div>
 
-  <div class="card">
-    <h3 style="margin-bottom:6px;">Learning outcomes</h3>
-    <p class="page-sub" style="font-size:0.85rem;margin-bottom:14px;">
-      The 20 Te Whāriki learning outcomes, grouped by strand. Tick any that apply.
-    </p>
-    {% for strand, outcomes in outcomes_by_strand.items() %}
-    <div class="outcome-group">
-      <div class="outcome-group-head">{{ strand }}</div>
-      {% for o in outcomes %}
-      <label class="outcome-check">
-        <input type="checkbox" name="outcome" value="{{ o }}"
-               {{ 'checked' if selected_outcomes and o in selected_outcomes }} />
-        <span>{{ o }}</span>
-      </label>
-      {% endfor %}
-    </div>
-    {% endfor %}
-  </div>
+        <div class="ai-thread" id="aiThread"></div>
 
-  <div class="form-actions">
-    <button type="submit" name="action" value="draft" class="btn btn-secondary">Save draft</button>
-    <button type="submit" name="action" value="publish" class="btn">Publish story</button>
+        <div class="ai-input-row">
+          <textarea id="aiInput" rows="2" placeholder="Ask the assistant…"
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAi();}"></textarea>
+          <button type="button" class="btn btn-sm" onclick="sendAi()" id="aiSendBtn">Ask</button>
+        </div>
+      </div>
+    </aside>
   </div>
 </form>
+
+<script>
+  const editor = document.getElementById('observationEditor');
+  const statusEl = document.getElementById('editorStatus');
+
+  /* ---------------- Rich text formatting ---------------- */
+  const DEFAULT_FONT = 'Inter';
+  const DEFAULT_SIZE = '16px';
+  const KNOWN_SIZES = ['13px', '16px', '20px', '26px'];
+
+  function exec(command, value) {
+    editor.focus();
+    document.execCommand(command, false, value || null);
+    syncToolbar();
+  }
+
+  const FONT_LABELS = ['Inter', 'Georgia', 'Times New Roman', 'Arial',
+                      'Comic Sans MS', 'Courier New'];
+  const SIZE_LABELS = { '13px': 'Small', '16px': 'Normal', '20px': 'Large', '26px': 'Huge' };
+
+  function toggleDrop(id) {
+    const drop = document.getElementById(id);
+    const wasOpen = drop.classList.contains('open');
+    document.querySelectorAll('.tb-drop').forEach(function (d) { d.classList.remove('open'); });
+    if (!wasOpen) drop.classList.add('open');
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.tb-drop')) {
+      document.querySelectorAll('.tb-drop').forEach(function (d) { d.classList.remove('open'); });
+    }
+  });
+
+  function applyFont(font) {
+    editor.focus();
+    document.execCommand('fontName', false, font);
+    document.getElementById('fontValue').textContent = font;
+    document.querySelectorAll('.tb-drop').forEach(function (d) { d.classList.remove('open'); });
+    syncToolbar();
+  }
+
+  // execCommand's fontSize only accepts 1-7, so apply a real CSS size instead.
+  function applyFontSize(size) {
+    editor.focus();
+    document.execCommand('fontSize', false, '7');
+    editor.querySelectorAll('font[size="7"]').forEach(function (el) {
+      const span = document.createElement('span');
+      span.style.fontSize = size;
+      span.innerHTML = el.innerHTML;
+      el.replaceWith(span);
+    });
+    document.getElementById('sizeValue').textContent = SIZE_LABELS[size] || size;
+    document.querySelectorAll('.tb-drop').forEach(function (d) { d.classList.remove('open'); });
+    syncToolbar();
+  }
+
+  /* Reads the formatting at the cursor and writes it into the toolbar labels,
+     so they always show what you are actually typing in. */
+  function syncToolbar() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+
+    let node = sel.getRangeAt(0).startContainer;
+    if (node.nodeType === 3) node = node.parentNode;
+    if (!node || !editor.contains(node)) return;
+
+    const computed = window.getComputedStyle(node);
+
+    const family = (computed.fontFamily || '').split(',')[0].replace(/["']/g, '').trim();
+    const matchedFont = FONT_LABELS.find(function (f) {
+      return f.toLowerCase() === family.toLowerCase();
+    });
+    document.getElementById('fontValue').textContent = matchedFont || family || 'Inter';
+
+    const px = Math.round(parseFloat(computed.fontSize));
+    const sizes = Object.keys(SIZE_LABELS);
+    const exact = sizes.find(function (sz) { return parseInt(sz, 10) === px; });
+    if (exact) {
+      document.getElementById('sizeValue').textContent = SIZE_LABELS[exact];
+    } else {
+      document.getElementById('sizeValue').textContent = px + 'px';
+    }
+
+    [['bold', 'tbBold'], ['italic', 'tbItalic'],
+     ['underline', 'tbUnderline'], ['strikeThrough', 'tbStrike']].forEach(function (pair) {
+      const btn = document.getElementById(pair[1]);
+      if (!btn) return;
+      let on = false;
+      try { on = document.queryCommandState(pair[0]); } catch (e) {}
+      btn.classList.toggle('tb-active', on);
+    });
+  }
+
+  window.addEventListener('load', function () { syncToolbar(); });
+
+  ['keyup', 'mouseup', 'focus'].forEach(function (evt) {
+    editor.addEventListener(evt, syncToolbar);
+  });
+  document.addEventListener('selectionchange', function () {
+    if (document.activeElement === editor) syncToolbar();
+  });
+
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg;
+    statusEl.className = isError ? 'editor-status-error' : '';
+  }
+
+  /* ---------------- Images: paste, drop, or pick ---------------- */
+  function insertImageUrl(url) {
+    editor.focus();
+    document.execCommand('insertHTML', false,
+      '<img src="' + url + '" alt="Learning story photo" /><p><br></p>');
+  }
+
+  async function uploadDataUrl(dataUrl) {
+    const res = await fetch('{{ url_for("upload_story_image") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data_url: dataUrl })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data.url;
+  }
+
+  async function uploadFile(file) {
+    const fd = new FormData();
+    fd.append('image', file);
+    const res = await fetch('{{ url_for("upload_story_image") }}', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data.url;
+  }
+
+  async function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    setStatus('Uploading ' + (file.name || 'image') + '…');
+    try {
+      insertImageUrl(await uploadFile(file));
+      setStatus('Image added.');
+    } catch (err) {
+      setStatus(err.message, true);
+    }
+  }
+
+  function handlePickedFiles(files) {
+    Array.from(files).forEach(handleFile);
+  }
+
+  // Paste: images go through the upload endpoint; text is pasted unformatted
+  // so pasting from Word doesn't drag in a wall of foreign markup.
+  editor.addEventListener('paste', function (e) {
+    const items = (e.clipboardData || window.clipboardData).items;
+    let handledImage = false;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        handledImage = true;
+        const file = items[i].getAsFile();
+        const reader = new FileReader();
+        setStatus('Uploading pasted image…');
+        reader.onload = async function (ev) {
+          try {
+            insertImageUrl(await uploadDataUrl(ev.target.result));
+            setStatus('Image added.');
+          } catch (err) {
+            setStatus(err.message, true);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    if (!handledImage) {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(function (evt) {
+    editor.addEventListener(evt, function (e) { e.preventDefault(); editor.classList.add('editor-dragover'); });
+  });
+  ['dragleave', 'drop'].forEach(function (evt) {
+    editor.addEventListener(evt, function (e) { e.preventDefault(); editor.classList.remove('editor-dragover'); });
+  });
+  editor.addEventListener('drop', function (e) {
+    if (e.dataTransfer && e.dataTransfer.files) Array.from(e.dataTransfer.files).forEach(handleFile);
+  });
+
+  /* ---------------- Submit ---------------- */
+  document.getElementById('storyForm').addEventListener('submit', function () {
+    document.getElementById('contentField').value = editor.innerHTML;
+  });
+
+  /* ---------------- AI assistant ---------------- */
+  let aiHistory = [];
+  let aiBusy = false;
+
+  function toggleAi() {
+    const layout = document.getElementById('editorLayout');
+    layout.classList.toggle('ai-open');
+    const open = layout.classList.contains('ai-open');
+    document.getElementById('aiChevron').textContent = open ? '›' : '‹';
+    try { localStorage.setItem('wc_ai_open', open ? '1' : '0'); } catch (e) {}
+  }
+
+  (function restoreAi() {
+    let open = false;
+    try { open = localStorage.getItem('wc_ai_open') === '1'; } catch (e) {}
+    if (open) document.getElementById('editorLayout').classList.add('ai-open');
+    document.getElementById('aiChevron').textContent = open ? '›' : '‹';
+  })();
+
+  function updateChildName() { /* used when building the AI prompt */ }
+
+  function selectedChildName() {
+    const sel = document.getElementById('child_id');
+    const opt = sel.options[sel.selectedIndex];
+    return (opt && opt.dataset.name) ? opt.dataset.name : 'the child';
+  }
+
+  function appendAiMessage(role, text) {
+    const thread = document.getElementById('aiThread');
+    const wrap = document.createElement('div');
+    wrap.className = 'ai-msg ai-msg-' + role;
+    wrap.textContent = text;
+
+    if (role === 'assistant') {
+      const insert = document.createElement('button');
+      insert.type = 'button';
+      insert.className = 'ai-insert';
+      insert.textContent = 'Insert into observation';
+      insert.onclick = function () {
+        editor.focus();
+        const html = text.split(/\n{2,}/)
+          .map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; })
+          .join('');
+        document.execCommand('insertHTML', false, html);
+        setStatus('Inserted the assistant\u2019s text — edit it to make it yours.');
+      };
+      wrap.appendChild(insert);
+    }
+
+    thread.appendChild(wrap);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function askAi(prompt) {
+    document.getElementById('aiInput').value = prompt;
+    sendAi();
+  }
+
+  async function sendAi() {
+    if (aiBusy) return;
+    const input = document.getElementById('aiInput');
+    const question = input.value.trim();
+    if (!question) return;
+
+    const layout = document.getElementById('editorLayout');
+    if (!layout.classList.contains('ai-open')) toggleAi();
+
+    input.value = '';
+    appendAiMessage('user', question);
+    aiHistory.push({ role: 'user', content: question });
+
+    aiBusy = true;
+    const btn = document.getElementById('aiSendBtn');
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    const thread = document.getElementById('aiThread');
+    const pending = document.createElement('div');
+    pending.className = 'ai-msg ai-msg-assistant ai-pending';
+    pending.textContent = 'Thinking…';
+    thread.appendChild(pending);
+    thread.scrollTop = thread.scrollHeight;
+
+    try {
+      const res = await fetch('{{ url_for("learning_story_ai_assist") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          history: aiHistory,
+          child_name: selectedChildName(),
+          draft: editor.innerHTML
+        })
+      });
+      const data = await res.json();
+      pending.remove();
+
+      if (data.reply) {
+        appendAiMessage('assistant', data.reply);
+        aiHistory.push({ role: 'assistant', content: data.reply });
+      } else {
+        appendAiMessage('error', data.error || 'Something went wrong.');
+      }
+    } catch (err) {
+      pending.remove();
+      appendAiMessage('error', 'Could not reach the assistant. Please try again.');
+    } finally {
+      aiBusy = false;
+      btn.disabled = false;
+      btn.textContent = 'Ask';
+    }
+  }
+</script>
 
 {% endblock %}

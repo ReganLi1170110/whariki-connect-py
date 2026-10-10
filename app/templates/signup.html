@@ -63,7 +63,13 @@
 
         <div class="field">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" />
+          <input type="password" id="password" name="password" required minlength="9" autocomplete="new-password" placeholder="9+ characters, 1 uppercase, 1 special character" />
+          <small class="field-hint">More than 8 characters, with at least one uppercase letter and one special character (e.g. ! @ # $ %).</small>
+        </div>
+
+        <div class="field">
+          <label for="confirm_password">Confirm password</label>
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="9" autocomplete="new-password" placeholder="Type it again" />
         </div>
 
         <div class="field">

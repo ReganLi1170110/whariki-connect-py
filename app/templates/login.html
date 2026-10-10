@@ -12,13 +12,36 @@
 
 <div class="login-shell">
   <div class="login-brand weave-pattern">
-    <div class="login-brand-top">
-      <img src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" class="login-logo" />
+    <div class="login-brand-inner">
+      <div class="login-brand-bar">
+        <img src="{{ url_for('static', filename='img/logo-mark.svg') }}" alt="" class="login-logo" />
+        <a href="{{ url_for('about') }}" class="brand-bar-link">About us</a>
+      </div>
+
       <div class="eyebrow">Early Childhood Education</div>
       <h1>Everything about your tamariki, woven into one place.</h1>
-      <p>Learning stories, attendance, accident forms and parent&ndash;teacher messages — one login, instead of switching between three or four different apps.</p>
+
+      <p class="brand-lead">
+        Whāriki Connect brings learning stories, daily attendance, accident and incident
+        forms, and parent&ndash;teacher messages into a single platform — so teachers stop
+        moving between three or four separate systems just to get through the day.
+      </p>
+
+      <ul class="brand-points">
+        <li><strong>Learning stories</strong> tagged to all five Te Whāriki strands and all twenty learning outcomes, with photos.</li>
+        <li><strong>Attendance</strong> whānau can record themselves at drop-off and pick-up, with a calendar teachers can correct.</li>
+        <li><strong>Accident forms</strong> that follow the paper report teachers already know, sent straight to the right whānau.</li>
+        <li><strong>Messages</strong> between kaiako and whānau, kept alongside the child they're about.</li>
+      </ul>
+
+      <img src="{{ url_for('static', filename='img/mat-time.jpg') }}"
+           alt="A teacher reading with children during mat time" class="login-photo" />
+
+      <p class="brand-footnote">
+        Built for New Zealand ECE services following <em>Te Whāriki</em>, the national early
+        childhood curriculum.
+      </p>
     </div>
-    <img src="{{ url_for('static', filename='img/mat-time.jpg') }}" alt="A teacher reading with children during mat time" class="login-photo" />
   </div>
 
   <div class="login-form-wrap">
@@ -45,9 +68,16 @@
         <div class="field">
           <label for="password">Password</label>
           <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••••" />
+          <p class="field-hint" style="text-align:right;margin-top:6px;">
+            <a href="{{ url_for('forgot_password') }}" style="color:var(--color-primary);font-weight:600;">Forgot password?</a>
+          </p>
         </div>
         <button type="submit" class="btn btn-block">Sign in</button>
       </form>
+
+      <div class="login-divider"><span>or</span></div>
+
+      <a href="{{ url_for('signup') }}" class="btn btn-secondary btn-block">Sign up</a>
 
       <p class="login-signup-link">
         New here? <a href="{{ url_for('signup') }}">Create a parent or teacher account</a>

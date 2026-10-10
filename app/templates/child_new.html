@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Add a child — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('children_list') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to children</a>
+
+<h1>Add a child</h1>
+<p class="page-sub">Only name, date of birth and classroom are required — everything else can be filled in now or added later from the child's profile.</p>
+
+<form method="POST" action="{{ url_for('create_child') }}" enctype="multipart/form-data">
+
+  <div class="card">
+    <h3 style="margin-bottom:14px;">Basic information</h3>
+    <div class="form-row">
+      <div class="field">
+        <label for="first_name">First name</label>
+        <input type="text" id="first_name" name="first_name" required
+               value="{{ form.first_name if form else '' }}" />
+      </div>
+      <div class="field">
+        <label for="last_name">Last name</label>
+        <input type="text" id="last_name" name="last_name" required
+               value="{{ form.last_name if form else '' }}" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="date_of_birth">Date of birth</label>
+        <input type="date" id="date_of_birth" name="date_of_birth" required
+               value="{{ form.date_of_birth if form else '' }}" />
+      </div>
+      <div class="field">
+        <label for="classroom">Classroom</label>
+        <select id="classroom" name="classroom" required>
+          <option value="">— Select —</option>
+          {% for c in classrooms %}
+          <option value="{{ c }}" {{ 'selected' if form and form.classroom == c }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:0;">
+      <label for="avatar">Photo</label>
+      <input type="file" id="avatar" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" />
+      <p class="field-hint">Optional — initials are used if there's no photo. Max 5 MB.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:14px;">Emergency contact</h3>
+    <div class="form-row">
+      <div class="field">
+        <label for="emergency_contact">Name</label>
+        <input type="text" id="emergency_contact" name="emergency_contact"
+               placeholder="e.g. Jane Smith" value="{{ form.emergency_contact if form else '' }}" />
+      </div>
+      <div class="field">
+        <label for="emergency_phone">Phone</label>
+        <input type="tel" id="emergency_phone" name="emergency_phone"
+               placeholder="e.g. 022 000 0000" value="{{ form.emergency_phone if form else '' }}" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:4px;">Health &amp; safety</h3>
+    <p class="field-hint" style="margin-bottom:12px;">
+      Shown on the child's profile so any teacher covering the room can see it at a glance.
+      The child's own parent can also update these later from their profile page.
+    </p>
+
+    <div class="field">
+      <label for="allergies">Allergies</label>
+      <input type="text" id="allergies" name="allergies"
+             placeholder="e.g. Peanuts (anaphylaxis — EpiPen in bag)" value="{{ form.allergies if form else '' }}" />
+    </div>
+    <div class="field">
+      <label for="medical_conditions">Medical conditions</label>
+      <input type="text" id="medical_conditions" name="medical_conditions"
+             placeholder="e.g. Asthma" value="{{ form.medical_conditions if form else '' }}" />
+    </div>
+    <div class="field">
+      <label for="medications">Medications</label>
+      <input type="text" id="medications" name="medications"
+             placeholder="e.g. Ventolin inhaler as needed" value="{{ form.medications if form else '' }}" />
+    </div>
+    <div class="field">
+      <label for="dietary_requirements">Dietary requirements</label>
+      <input type="text" id="dietary_requirements" name="dietary_requirements"
+             placeholder="e.g. Dairy-free" value="{{ form.dietary_requirements if form else '' }}" />
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="medical_notes">Other medical notes</label>
+      <textarea id="medical_notes" name="medical_notes" rows="2"
+                placeholder="GP contact, care instructions, anything else worth knowing">{{ form.medical_notes if form else '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:4px;">Link to parent(s)</h3>
+    <p class="field-hint" style="margin-bottom:12px;">
+      Optional — only already-approved parent accounts are listed. If the parent hasn't signed up
+      yet, skip this and link them later when you approve their account.
+    </p>
+
+    {% if parents %}
+    <div style="max-height:220px;overflow-y:auto;border:1.5px solid var(--color-border);border-radius:6px;padding:10px 14px;">
+      {% for p in parents %}
+      <label style="display:block;font-weight:400;font-size:0.88rem;margin-bottom:6px;">
+        <input type="checkbox" name="parent_ids" value="{{ p.user_id }}" />
+        {{ p.full_name }} <span style="color:var(--color-ink-soft);">({{ p.email }})</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">No approved parent accounts yet.</div>
+    {% endif %}
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-accent">Add child</button>
+  </div>
+</form>
+
+{% endblock %}

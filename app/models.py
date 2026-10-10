@@ -23,6 +23,32 @@ class Child:
     classroom: str
     emergency_contact: Optional[str] = None
     emergency_phone: Optional[str] = None
+    allergies: Optional[str] = None
+    medical_conditions: Optional[str] = None
+    medications: Optional[str] = None
+    dietary_requirements: Optional[str] = None
+    medical_notes: Optional[str] = None
+
+
+@dataclass
+class Immunization:
+    immunization_id: int
+    child_id: int
+    vaccine_name: str
+    dose_label: Optional[str]
+    date_given: Optional[date]
+    status: str  # 'completed', 'scheduled', 'overdue', 'exempt'
+    notes: Optional[str] = None
+
+
+@dataclass
+class Announcement:
+    announcement_id: int
+    sender_id: int
+    classroom: str
+    content: str
+    recipient_count: int
+    created_at: datetime
 
 
 @dataclass

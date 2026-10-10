@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_avatar.html" import avatar %}
+{% block title %}Attendance history — Whāriki Connect{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('attendance') }}" class="btn btn-secondary btn-sm" style="margin-bottom:16px;display:inline-flex;">← Back to today's attendance</a>
+
+<h1>Attendance history</h1>
+<p class="page-sub">Search and filter attendance records as they build up over the term.</p>
+
+<form method="GET" action="{{ url_for('attendance_history') }}" class="story-filter-form">
+  <div class="field">
+    <label for="child_id">Child</label>
+    <select id="child_id" name="child_id">
+      <option value="">All children</option>
+      {% for c in children %}
+      <option value="{{ c.child_id }}" {{ 'selected' if active_child_id == c.child_id }}>{{ c.first_name }} {{ c.last_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="">Any status</option>
+      <option value="present" {{ 'selected' if active_status == 'present' }}>Present</option>
+      <option value="absent" {{ 'selected' if active_status == 'absent' }}>Absent</option>
+      <option value="sick" {{ 'selected' if active_status == 'sick' }}>Sick</option>
+      <option value="on_leave" {{ 'selected' if active_status == 'on_leave' }}>On leave</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="start_date">From</label>
+    <input type="date" id="start_date" name="start_date" value="{{ active_start_date }}" />
+  </div>
+  <div class="field">
+    <label for="end_date">To</label>
+    <input type="date" id="end_date" name="end_date" value="{{ active_end_date }}" />
+  </div>
+  <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+  {% if active_child_id or active_status or active_start_date or active_end_date %}
+  <a href="{{ url_for('attendance_history') }}" class="btn btn-secondary btn-sm">Clear</a>
+  {% endif %}
+</form>
+
+{% if rows %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="simple-table">
+    <thead>
+      <tr><th>Date</th><th>Child</th><th>Status</th><th>Check-in</th><th>Check-out</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.date.strftime('%d %b %Y') }}</td>
+        <td>
+          <span style="display:inline-flex;align-items:center;gap:8px;">
+            {{ avatar(none, (r.first_name[0] ~ r.last_name[0])|upper, 'avatar-xs') }}
+            {{ r.first_name }} {{ r.last_name }}
+          </span>
+        </td>
+        <td><span class="status-pill {{ 'status-present' if r.status == 'present' else 'status-absent' }}">{{ r.status }}</span></td>
+        <td>{{ r.check_in_time.strftime('%I:%M %p') if r.check_in_time else '—' }}</td>
+        <td>{{ r.check_out_time.strftime('%I:%M %p') if r.check_out_time else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="page-sub" style="margin-top:12px;font-size:0.8rem;">Showing up to 300 matching records, most recent first.</p>
+{% else %}
+<div class="card"><div class="empty-state">No attendance records match those filters.</div></div>
+{% endif %}
+
+{% endblock %}

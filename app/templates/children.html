@@ -1,22 +1,41 @@
 {% extends "base.html" %}
+{% from "_avatar.html" import avatar %}
 {% block title %}Children — Whāriki Connect{% endblock %}
 {% block content %}
 
-<h1>Children</h1>
-<p class="page-sub">
-  {% if session.role == 'Parent' %}Your children enrolled at Sunny Preschool.
-  {% elif session.role == 'Teacher' %}Children in {{ session.classroom }}.
-  {% else %}Every child enrolled across all classrooms.{% endif %}
-</p>
+<div class="page-head">
+  <div>
+    <h1>Children</h1>
+    <p class="page-sub">
+      {% if session.role == 'Parent' %}Your children enrolled at Sunny Preschool.
+      {% elif session.role == 'Teacher' %}Children in {{ session.classroom }}.
+      {% else %}Every child enrolled across all classrooms.{% endif %}
+    </p>
+  </div>
+  {% if session.role == 'Admin' %}
+  <div style="display:flex;gap:10px;align-items:center;">
+    <a href="{{ url_for('children_list', show_withdrawn=0 if show_withdrawn else 1) }}" class="btn btn-secondary btn-sm">
+      {{ 'Hide withdrawn children' if show_withdrawn else 'Show withdrawn children' }}
+    </a>
+    <a href="{{ url_for('new_child') }}" class="btn btn-accent">
+      <svg class="btn-icon" viewBox="0 0 20 20" fill="none"><circle cx="8" cy="6.5" r="2.7" stroke="currentColor" stroke-width="1.6"/><path d="M2.8 16c0-2.9 2.3-4.7 5.2-4.7 1.3 0 2.5.4 3.4 1M15 11v5M12.5 13.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Add child
+    </a>
+  </div>
+  {% endif %}
+</div>
 
 {% if children %}
 <div class="grid-cards">
   {% for c in children %}
-  <a class="card child-card" href="{{ url_for('child_profile', child_id=c.child_id) }}">
-    <div class="avatar">{{ (c.first_name[0] ~ c.last_name[0])|upper }}</div>
+  <a class="card child-card {{ 'child-card-withdrawn' if c.enrolment_status == 'withdrawn' }}" href="{{ url_for('child_profile', child_id=c.child_id) }}">
+    {{ avatar(c.avatar_url, (c.first_name[0] ~ c.last_name[0])|upper) }}
     <div class="child-name">{{ c.first_name }} {{ c.last_name }}</div>
     <div class="child-meta">{{ c.classroom }}</div>
     <div class="child-meta">DOB: {{ c.date_of_birth.strftime('%d %b %Y') }}</div>
+    {% if c.enrolment_status == 'withdrawn' %}
+    <span class="status-pill status-absent" style="margin-top:6px;">Withdrawn</span>
+    {% endif %}
   </a>
   {% endfor %}
 </div>

@@ -23,11 +23,14 @@ def list_stories_for_child(child_id, user):
         return cursor.fetchall()
 
 
-def list_stories_for_user(user, child_id=None):
+def list_stories_for_user(user, child_id=None, start_date=None, end_date=None, strand=None):
     """The main Learning Stories page:
        - Parent  -> every published story for their own children
        - Teacher -> every story they have written themselves
        - Admin   -> every story in the centre
+
+       child_id, start_date, end_date and strand are all optional narrowing
+       filters applied on top of whichever of those three scopes applies.
     """
     role = user['role']
     params = []
@@ -60,6 +63,18 @@ def list_stories_for_user(user, child_id=None):
         if child_id:
             sql += " AND ls.child_id = %s"
             params.append(child_id)
+
+        if start_date:
+            sql += " AND ls.created_at >= %s"
+            params.append(start_date)
+
+        if end_date:
+            sql += " AND ls.created_at < (%s::date + interval '1 day')"
+            params.append(end_date)
+
+        if strand:
+            sql += " AND %s = ANY(ls.strands)"
+            params.append(strand)
 
         sql += " ORDER BY ls.created_at DESC;"
         cursor.execute(sql, tuple(params))
